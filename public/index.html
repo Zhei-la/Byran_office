@@ -85,8 +85,8 @@
 
   .agent{position:absolute; width:56px; transform:translate(-50%,-50%); text-align:center; cursor:pointer; z-index:5; will-change:left,top}
   .agent .av{position:relative; display:inline-block; transition:transform .12s}
-  .agent.walk .av{animation:bob .4s infinite}
-  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .agent.walk .av{animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
   .agent .ring{position:absolute; left:50%; bottom:-3px; transform:translateX(-50%); width:34px;height:8px;border-radius:50%;
     background:rgba(0,0,0,.35); filter:blur(1px)}
   .agent .nm{margin-top:2px; font-size:9.5px; font-weight:700; color:#dfe6f2; text-shadow:0 1px 2px rgba(0,0,0,.8)}
@@ -375,11 +375,9 @@ function buildOffice(){
       state:(a.status==="work"?"work":a.status==="review"?"goconfirm":"idle"),
       purpose:null, timer:rnd(20,80), facing:1, prog:(a.status==="done"?100:rnd(10,70))};
     el.addEventListener('click', function(){ openProfile(a.id); });
-    // initial bubble
+    // 조용한 모드: 막힘 경고만 표시, 나머지는 말풍선 없음
     var bub=el.querySelector('.bub');
-    if(a.status==="work"){ bub.textContent=pick(WORKLINES[a.dept]); bub.className='bub show'; }
-    else if(a.status==="block"){ bub.textContent="⚠ "+a.task; bub.className='bub show err'; }
-    else if(a.status==="review"){ /* will walk */ }
+    if(a.status==="block"){ bub.textContent="⚠ "+a.task; bub.className='bub show err'; }
   });
   applyFilterVisual();
 }
@@ -401,31 +399,12 @@ function hush(id){ chars[id].el.querySelector('.bub').className='bub'; }
 function place(c){ c.el.style.left=c.x+'px'; c.el.style.top=c.y+'px'; c.el.style.zIndex=5+Math.round(c.y/8); }
 
 function step(){
+  // 조용한 모드: 모두 제자리에 고정. 작업중인 직원만 은은하게 움직임(bob).
   for(var id in chars){
     var c=chars[id]; var a=c.a;
-    if(a.status==="done" || a.status==="block" || a.status==="wait"){ c.el.classList.remove('walk'); continue; }
-    if(c.state==="walk" || c.state==="return"){
-      var dx=c.tx-c.x, dy=c.ty-c.y, dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist<2){ c.x=c.tx; c.y=c.ty; place(c); c.el.classList.remove('walk'); arrive(c); }
-      else{ var s=2.2; c.x+=dx/dist*s; c.y+=dy/dist*s;
-        var f=dx<0?-1:1; if(f!==c.facing){c.facing=f; c.el.querySelector('.av').style.transform='scaleX('+f+')';}
-        c.el.classList.add('walk'); place(c); }
-    } else {
-      c.el.classList.remove('walk'); c.timer-=1;
-      if(c.state==="work"){
-        c.prog+=rnd(1.5,4);
-        if(c.prog>=100){ c.prog=100; startConfirm(c); }
-        else if(c.timer<=0){ c.timer=rnd(30,70); say(a.id, pick(WORKLINES[a.dept])); }
-      } else if(c.state==="goconfirm"){ // review status parked -> walk to boss
-        startConfirm(c, true);
-      } else if(c.state==="wait_boss"){
-        if(c.timer<=0){ // auto approve
-          approveAgent(a.id, true);
-        }
-      } else if(c.state==="idle"){
-        if(c.timer<=0){ c.timer=rnd(40,90); }
-      }
-    }
+    if(c.x!==c.home[0] || c.y!==c.home[1]){ c.x=c.home[0]; c.y=c.home[1]; place(c); }
+    if(a.status==="work"){ c.el.classList.add('walk'); }
+    else { c.el.classList.remove('walk'); }
   }
 }
 
@@ -474,20 +453,8 @@ function spawnHeart(){
   setTimeout(function(){h.remove();},950);
 }
 
-/* occasionally unblock or spawn */
-function ambient(){
-  // unblock the blocked one sometimes
-  AGENTS.forEach(function(a){
-    if(a.status==="block" && Math.random()<0.25){
-      a.status="work"; var c=chars[a.id]; c.state="work"; c.prog=rnd(5,20); c.timer=rnd(30,60);
-      refreshAgentVisual(a.id); say(a.id, "해결됐어요! 다시 작업 🙌"); syncBoard();
-      addLog(a.name,a.dept,"막힘 해결 → 작업 재개");
-    } else if(a.status==="wait" && Math.random()<0.3){
-      a.status="work"; var c2=chars[a.id]; c2.state="work"; c2.prog=2; c2.timer=rnd(30,60);
-      refreshAgentVisual(a.id); a.task=pick(WORKLINES[a.dept]); say(a.id,a.task); syncBoard();
-    }
-  });
-}
+/* 조용한 모드: 자동 상태 변경 없음 */
+function ambient(){}
 
 /* ================= KPIs / CHIPS / LOG ================= */
 function counts(){
