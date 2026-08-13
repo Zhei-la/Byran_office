@@ -40,8 +40,7 @@
   .kpi.done .n{color:var(--mint)} .kpi.block .n{color:var(--red)} .kpi.wait .n{color:var(--sub)}
 
   /* ---------- project chips ---------- */
-  .chips{display:flex; gap:7px; overflow-x:auto; padding:2px 12px 10px; scrollbar-width:none}
-  .chips::-webkit-scrollbar{display:none}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; padding:2px 12px 10px}
   .chip{flex:none; font-size:12px; font-weight:600; padding:6px 12px; border-radius:999px; white-space:nowrap;
     background:var(--panel); border:1px solid var(--line); color:var(--sub); cursor:pointer; transition:.15s}
   .chip.on{background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#0a0c11; border-color:transparent; font-weight:800}
