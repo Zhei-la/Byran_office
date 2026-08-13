@@ -162,6 +162,8 @@
   .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2)); color:#0a0c11; border-color:transparent}
   .btn.gold{background:var(--gold); color:#141821; border-color:transparent}
   .btn.full{grid-column:1/-1}
+  a.btn{text-decoration:none; display:block}
+  .linkbtn{margin-top:14px; background:linear-gradient(135deg,var(--mint),#22c48a); color:#04120c; border-color:transparent}
   .field{margin-top:12px}
   .field label{font-size:11px; color:var(--sub); font-weight:700; display:block; margin-bottom:6px}
   select,textarea{width:100%; background:var(--panel); border:1px solid var(--line); border-radius:11px; color:var(--ink);
@@ -547,6 +549,7 @@ function openProfile(id){
   appBtn.style.display = a.status==="review" ? "" : "none";
   appBtn.onclick=function(){ approveAgent(id); closeSheet(); };
   document.getElementById('pAssign').onclick=function(){ closeSheet(); setTimeout(function(){ openCompose(a.project, id); },180); };
+  document.getElementById('pNotion').href = a.notion || 'https://app.notion.com/p/02b64c31f9214159888da0bb6e302bae';
   openSheet(sheetProfile);
 }
 
