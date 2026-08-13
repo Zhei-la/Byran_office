@@ -1,0 +1,15 @@
+{
+  "name": "byran-media-ai-office",
+  "version": "1.0.0",
+  "description": "바이란미디어 AI 오피스 - 실시간 작업 현황판",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
