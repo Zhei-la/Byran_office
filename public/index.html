@@ -13,7 +13,7 @@
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent}
   body{background:radial-gradient(120% 60% at 50% -5%, #16203a 0%, var(--bg) 55%); color:var(--ink); min-height:100vh;
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Segoe UI,Roboto,sans-serif; letter-spacing:-.01em}
-  .wrap{max-width:1440px; margin:0 auto; padding:16px 18px 40px}
+  .wrap{max-width:1440px; margin:0 auto; padding:16px 18px 90px}
 
   .top{display:flex; align-items:center; gap:12px; margin-bottom:16px}
   .logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:19px;
@@ -27,17 +27,42 @@
   .notionBtn{flex:none; font-size:12px; font-weight:800; color:#0a0c11; text-decoration:none; white-space:nowrap;
     background:linear-gradient(135deg,var(--brand),var(--violet)); padding:8px 12px; border-radius:999px}
 
-  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:14px}
   .kpi{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px}
   .kpi .n{font-size:26px; font-weight:900; font-variant-numeric:tabular-nums; line-height:1}
   .kpi .l{font-size:12px; color:var(--sub); margin-top:6px}
   .kpi.work .n{color:var(--brand)} .kpi.review .n{color:var(--gold)} .kpi.done .n{color:var(--mint)} .kpi.wait .n{color:var(--sub)}
+
+  .tabs{display:flex; gap:8px; margin-bottom:14px}
+  .tab{font-size:13.5px; font-weight:800; padding:9px 16px; border-radius:11px; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); color:var(--sub)}
+  .tab.on{background:var(--panel2); color:var(--ink); border-color:#33405c; box-shadow:inset 0 0 0 1px rgba(124,156,255,.25)}
 
   .teams{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px}
   .tchip{font-size:12.5px; font-weight:700; padding:7px 13px; border-radius:999px; cursor:pointer;
     background:var(--panel); border:1px solid var(--line); color:var(--sub); transition:.15s}
   .tchip.on{color:#0a0c11; border-color:transparent; font-weight:800}
 
+  /* ---- 오피스(부서) 뷰 ---- */
+  .office{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+  .dept{background:linear-gradient(180deg,rgba(27,33,48,.9),rgba(20,25,37,.7)); border:1px solid var(--line);
+    border-radius:16px; padding:15px 16px}
+  .deptH{display:flex; align-items:center; gap:8px; font-size:14.5px; font-weight:800; margin-bottom:14px}
+  .deptH .dot{width:10px;height:10px;border-radius:50%}
+  .deptH .deptc{margin-left:auto; font-size:11px; font-weight:800; color:var(--sub); background:var(--panel2);
+    border:1px solid var(--line); border-radius:999px; padding:2px 9px}
+  .crew-row{display:flex; gap:8px; justify-content:space-between}
+  .crew{flex:1; text-align:center; opacity:.5; transition:.2s}
+  .crew.on{opacity:1}
+  .crew .av{width:42px;height:42px;margin:0 auto 5px; border-radius:50%; border:2px solid var(--line);
+    display:grid; place-items:center; font-size:20px}
+  .crew.on .av{animation:breathe 2.6s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+  .crew span{font-size:10.5px; color:var(--sub); font-weight:700}
+  .crew .work-dot{display:block; width:6px;height:6px;border-radius:50%;background:var(--mint);margin:4px auto 0;opacity:0}
+  .crew.on .work-dot{opacity:1; animation:blink 1.4s infinite}
+
+  /* ---- 칸반 보드 ---- */
   .board{display:flex; gap:12px; overflow-x:auto; padding-bottom:10px; scrollbar-width:thin}
   .board::-webkit-scrollbar{height:8px}
   .board::-webkit-scrollbar-thumb{background:#2a3346; border-radius:8px}
@@ -59,22 +84,32 @@
     font-size:12.5px; font-weight:800; cursor:pointer; text-align:center}
   .btn.ok{background:var(--gold); color:#141821; border-color:transparent}
   .btn.no{background:rgba(255,107,107,.14); color:var(--red); border-color:rgba(255,107,107,.35)}
+  .btn.primary{background:linear-gradient(135deg,var(--brand),var(--violet)); color:#0a0c11; border-color:transparent}
   .rej-note{font-size:11px; color:var(--red); margin-top:8px; background:rgba(255,107,107,.08); border-radius:8px; padding:6px 8px}
 
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:34px 10px}
   .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:18px}
 
-  /* modal */
+  .fab{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); z-index:30; border:none; cursor:pointer;
+    display:flex; align-items:center; gap:8px; padding:14px 24px; border-radius:999px;
+    background:linear-gradient(135deg,var(--brand),var(--violet)); color:#0a0c11; font-size:15px; font-weight:900;
+    box-shadow:0 12px 30px rgba(124,156,255,.5)}
+
   .scrim{position:fixed; inset:0; background:rgba(4,6,10,.65); backdrop-filter:blur(3px); z-index:40; display:none; align-items:center; justify-content:center; padding:20px}
   .scrim.on{display:flex}
-  .modal{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; width:100%; max-width:420px}
+  .modal{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:18px; width:100%; max-width:440px}
   .modal h3{font-size:16px; font-weight:800; margin-bottom:6px}
   .modal p{font-size:12.5px; color:var(--sub); margin-bottom:12px}
-  textarea{width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:11px; color:var(--ink); font-size:13.5px; padding:11px; font-family:inherit; resize:none; min-height:84px}
-  .modal .acts{margin-top:14px}
+  .field{margin-top:12px}
+  .field label{font-size:11.5px; color:var(--sub); font-weight:700; display:block; margin-bottom:6px}
+  select,textarea{width:100%; background:var(--panel2); border:1px solid var(--line); border-radius:11px; color:var(--ink); font-size:13.5px; padding:11px; font-family:inherit; resize:none}
+  textarea{min-height:84px}
+  .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
 
   @media (max-width:720px){
-    .wrap{padding:12px 12px 32px}
+    .wrap{padding:12px 12px 90px}
     .kpis{grid-template-columns:repeat(2,1fr)}
+    .office{grid-template-columns:1fr}
     .col{flex:0 0 82%; min-width:82%}
     .ttl b{font-size:16px}
   }
@@ -91,13 +126,39 @@
   </div>
 
   <div class="kpis" id="kpis"></div>
-  <div class="teams" id="teams"></div>
-  <div class="board" id="board"></div>
 
-  <div class="foot">노션에서 작업을 <b>'요청'</b>하면 여기 떠서 <b>기획 → 제작 → 비주얼 → 검토</b>를 거쳐 <b>대표 컨펌</b>으로 옵니다.</div>
+  <div class="tabs">
+    <div class="tab on" data-v="office" id="tab-office">🏢 오피스</div>
+    <div class="tab" data-v="board" id="tab-board">🗂️ 작업 보드</div>
+  </div>
+
+  <div class="teams" id="teams"></div>
+
+  <div id="view-office"><div class="office" id="office"></div></div>
+  <div id="view-board" style="display:none"><div class="board" id="board"></div></div>
+
+  <div class="foot">노션에서 작업을 <b>'요청'</b>하거나 아래 <b>＋ 작업 시키기</b>로 지시하면, <b>기획 → 제작 → 비주얼 → 검토</b>를 거쳐 <b>대표 컨펌</b>으로 옵니다.</div>
 </div>
 
-<div class="scrim" id="scrim">
+<button class="fab" id="fab">＋ 작업 시키기</button>
+
+<!-- 작업 시키기 -->
+<div class="scrim" id="scrimC">
+  <div class="modal">
+    <h3>📋 작업 지시</h3>
+    <p>어느 팀에 무슨 일을 시킬지 정하세요. 기획 단계부터 자동으로 흘러갑니다.</p>
+    <div class="field"><label>담당 팀</label><select id="cTeam"></select></div>
+    <div class="field"><label>지시 내용</label><textarea id="cText" placeholder="예: AI 오피스 만든 과정 빌드인퍼블릭 스레드 글 1개"></textarea></div>
+    <div class="acts">
+      <button class="btn" id="cCancel">취소</button>
+      <button class="btn primary" id="cGo">보내기 🚀</button>
+    </div>
+    <div class="hint">게시·발송 같은 되돌릴 수 없는 작업은 완료 전 <b style="color:var(--gold)">대표 컨펌</b>을 기다립니다.</div>
+  </div>
+</div>
+
+<!-- 반려 -->
+<div class="scrim" id="scrimR">
   <div class="modal">
     <h3>🙅 반려 — 수정 요청</h3>
     <p id="rejFor">—</p>
@@ -110,15 +171,10 @@
 </div>
 
 <script>
-/* ===== 부서 ===== */
-var TEAMS = {
-  "스레드팀":"#7c9cff", "블로그팀":"#34e0a1", "사주팀":"#b28dff", "유튜브팀":"#ff6b6b", "마케팅팀":"#ff7bb0"
-};
-/* ===== 파이프라인 단계 (전달전달) ===== */
+var TEAMS = {"스레드팀":"#7c9cff","블로그팀":"#34e0a1","사주팀":"#b28dff","유튜브팀":"#ff6b6b","마케팅팀":"#ff7bb0"};
 var STAGES = ["기획","제작","비주얼","검토","컨펌대기","완료"];
 var STAGE_COLOR = {"기획":"#9aa6b8","제작":"#7c9cff","비주얼":"#5ad1ff","검토":"#ffc24b","컨펌대기":"#ffc24b","완료":"#34e0a1"};
 
-/* 팀·단계별 담당 역할 이름 */
 function roleName(team, stage){
   if(stage==="기획") return "기획자";
   if(stage==="검토") return "검토자";
@@ -127,97 +183,126 @@ function roleName(team, stage){
   if(stage==="제작") return {"스레드팀":"작가","블로그팀":"작가","사주팀":"사주풀이","유튜브팀":"대본작가","마케팅팀":"카피라이터"}[team];
   if(stage==="비주얼") return {"유튜브팀":"영상제작","사주팀":"표지디자인"}[team] || "이미지생성";
 }
+function roleEmoji(stage){ return {"기획":"🧭","제작":"✍️","비주얼":"🎨","검토":"🔍"}[stage]||"👤"; }
 
-/* ===== 작업들 (노션에서 채워짐. 각 항목에 notion 링크 포함) ===== */
+/* 노션에서 채워지는 실제 작업 목록 (지금은 비어있음, ＋작업 시키기로 추가 가능) */
 var TASKS = [];
+var uid=100;
 
-var filter="전체";
-var board=document.getElementById('board');
-
+var filter="전체", view="office";
 function nowStr(){ try{return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return "--:--";} }
 function hexa(hex,a){var h=hex.replace('#','');return 'rgba('+parseInt(h.substr(0,2),16)+','+parseInt(h.substr(2,2),16)+','+parseInt(h.substr(4,2),16)+','+a+')';}
+function find(id){ return TASKS.filter(function(t){return t.id===id;})[0]; }
 
 function renderTeams(){
   var box=document.getElementById('teams'); box.innerHTML='';
-  var all=['전체'].concat(Object.keys(TEAMS));
-  all.forEach(function(t){
-    var c=t==='전체'?'#ffffff':TEAMS[t];
+  ['전체'].concat(Object.keys(TEAMS)).forEach(function(t){
     var el=document.createElement('div'); el.className='tchip'+(t===filter?' on':''); el.textContent=t;
-    if(t===filter){ el.style.background=t==='전체'?'linear-gradient(135deg,#7c9cff,#b28dff)':c; }
-    el.onclick=function(){ filter=t; renderTeams(); renderBoard(); };
+    if(t===filter) el.style.background=t==='전체'?'linear-gradient(135deg,#7c9cff,#b28dff)':TEAMS[t];
+    el.onclick=function(){ filter=t; renderTeams(); renderAll(); };
     box.appendChild(el);
   });
 }
 
 function renderKPIs(){
   var work=0,review=0,done=0,plan=0;
-  TASKS.forEach(function(t){
-    if(t.stage===5) done++; else if(t.stage===4) review++; else if(t.stage===0) plan++; else work++;
-  });
+  TASKS.forEach(function(t){ if(t.stage===5)done++; else if(t.stage===4)review++; else if(t.stage===0)plan++; else work++; });
   document.getElementById('kpis').innerHTML=
     kpi('work','진행중',work)+kpi('review','대표 컨펌 대기',review)+kpi('done','완료',done)+kpi('wait','기획 대기',plan);
 }
 function kpi(c,l,n){return '<div class="kpi '+c+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
 
+function renderOffice(){
+  var box=document.getElementById('office'); var html='';
+  Object.keys(TEAMS).forEach(function(team){
+    if(filter!=='전체'&&filter!==team) return;
+    var c=TEAMS[team];
+    var mine=TASKS.filter(function(t){return t.team===team;});
+    var activeStages=mine.filter(function(t){return t.stage<4;}).map(function(t){return STAGES[t.stage];});
+    var work=mine.filter(function(t){return t.stage<4;}).length;
+    var review=mine.filter(function(t){return t.stage===4;}).length;
+    var crew=[["기획","기획자"],["제작",roleName(team,"제작")],["비주얼",roleName(team,"비주얼")],["검토","검토자"]].map(function(r){
+      var on=activeStages.indexOf(r[0])>=0;
+      return '<div class="crew'+(on?' on':'')+'"><div class="av" style="background:'+hexa(c,.18)+';border-color:'+(on?c:'var(--line)')+'">'+roleEmoji(r[0])+'</div><span>'+r[1]+'</span><span class="work-dot"></span></div>';
+    }).join('');
+    html+='<div class="dept">'+
+      '<div class="deptH"><span class="dot" style="background:'+c+'"></span>'+team+
+        '<span class="deptc">'+(work?('작업중 '+work):'대기')+(review?(' · 컨펌 '+review):'')+'</span></div>'+
+      '<div class="crew-row">'+crew+'</div></div>';
+  });
+  box.innerHTML=html || '<div class="empty">해당 팀이 없어요.</div>';
+}
+
 function renderBoard(){
-  var html='';
+  var b=document.getElementById('board'), html='';
   STAGES.forEach(function(stage,si){
-    var arr=TASKS.filter(function(t){ return t.stage===si && (filter==='전체'||t.team===filter); });
+    var arr=TASKS.filter(function(t){return t.stage===si&&(filter==='전체'||t.team===filter);});
     var cards=arr.map(function(t){
-      var tc=TEAMS[t.team];
-      var reviewing = (stage==="컨펌대기");
-      var vis = (stage==="완료")?100:(reviewing?100:t.prog);
-      var bar = (stage!=="완료")?'<div class="minibar"><i style="width:'+vis+'%"></i></div>':'';
-      var role = roleName(t.team, stage);
-      var nlink = t.notion || 'https://app.notion.com/p/02b64c31f9214159888da0bb6e302bae';
-      var acts = reviewing
+      var tc=TEAMS[t.team], reviewing=(stage==="컨펌대기");
+      var vis=(stage==="완료")?100:(reviewing?100:t.prog);
+      var bar=(stage!=="완료")?'<div class="minibar"><i style="width:'+vis+'%"></i></div>':'';
+      var nlink=t.notion||'https://app.notion.com/p/02b64c31f9214159888da0bb6e302bae';
+      var acts=reviewing
         ? '<a class="btn" href="'+nlink+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-top:11px;line-height:1.7">📄 노션에서 결과물 보기</a>'+
           '<div class="acts"><button class="btn no" onclick="reject('+t.id+')">🙅 반려</button><button class="btn ok" onclick="approve('+t.id+')">✔ 승인</button></div>'
         : '';
-      var rej = t.reject ? '<div class="rej-note">↩ 수정요청: '+t.reject+'</div>' : '';
+      var rej=t.reject?'<div class="rej-note">↩ 수정요청: '+t.reject+'</div>':'';
       return '<div class="card'+(reviewing?' review-hl':'')+'">'+
         '<span class="team" style="color:'+tc+';background:'+hexa(tc,.14)+'">'+t.team+'</span>'+
         '<div class="tt">'+t.title+'</div>'+
-        '<div class="role">👤 <b>'+role+'</b>'+(stage==="완료"?' · 승인됨 ✅':'')+'</div>'+
+        '<div class="role">👤 <b>'+roleName(t.team,stage)+'</b>'+(stage==="완료"?' · 승인됨 ✅':'')+'</div>'+
         bar+rej+acts+'</div>';
     }).join('') || '<div style="color:var(--muted);font-size:12px;padding:6px 4px">—</div>';
-    var dot=STAGE_COLOR[stage];
-    html+='<div class="col"><div class="colH"><span class="dot" style="background:'+dot+'"></span>'+stage+
+    html+='<div class="col"><div class="colH"><span class="dot" style="background:'+STAGE_COLOR[stage]+'"></span>'+stage+
           '<span class="cnt">'+arr.length+'</span></div>'+cards+'</div>';
   });
-  board.innerHTML=html;
-  renderKPIs();
+  b.innerHTML=html;
 }
 
-/* ===== 승인 / 반려 ===== */
-function approve(id){ var t=find(id); if(!t)return; t.stage=5; t.prog=100; t.reject=null; renderBoard(); }
+function renderAll(){ renderKPIs(); renderOffice(); renderBoard(); }
+
+/* 뷰 전환 */
+function setView(v){ view=v;
+  document.getElementById('tab-office').classList.toggle('on',v==='office');
+  document.getElementById('tab-board').classList.toggle('on',v==='board');
+  document.getElementById('view-office').style.display=v==='office'?'':'none';
+  document.getElementById('view-board').style.display=v==='board'?'':'none';
+}
+document.getElementById('tab-office').onclick=function(){setView('office');};
+document.getElementById('tab-board').onclick=function(){setView('board');};
+
+/* 승인 / 반려 */
+function approve(id){ var t=find(id); if(!t)return; t.stage=5; t.prog=100; t.reject=null; renderAll(); }
 var rejId=null;
 function reject(id){ rejId=id; var t=find(id);
   document.getElementById('rejFor').textContent='"'+t.title+'" ('+t.team+')';
-  document.getElementById('rejText').value='';
-  document.getElementById('scrim').classList.add('on');
+  document.getElementById('rejText').value=''; document.getElementById('scrimR').classList.add('on');
 }
-document.getElementById('rejCancel').onclick=function(){ document.getElementById('scrim').classList.remove('on'); };
+document.getElementById('rejCancel').onclick=function(){ document.getElementById('scrimR').classList.remove('on'); };
 document.getElementById('rejGo').onclick=function(){
-  var t=find(rejId); if(t){ t.reject=document.getElementById('rejText').value.trim()||'수정 요청'; t.stage=1; t.prog=5; }
-  document.getElementById('scrim').classList.remove('on'); renderBoard();
+  var t=find(rejId); if(t){ t.reject=document.getElementById('rejText').value.trim()||'수정 요청'; t.stage=1; t.prog=10; }
+  document.getElementById('scrimR').classList.remove('on'); renderAll();
 };
-function find(id){ return TASKS.filter(function(t){return t.id===id;})[0]; }
 
-/* ===== 시뮬레이션: 단계 자동 전달 ===== */
-function tick(){
-  TASKS.forEach(function(t){
-    if(t.stage>=4) return; // 컨펌대기/완료는 멈춤
-    t.prog += 2 + Math.random()*5;
-    if(t.prog>=100){ t.prog=0; t.stage++; t.reject=null; }
-  });
-  renderBoard();
-}
+/* 작업 시키기 */
+var fabT=document.getElementById('cTeam');
+Object.keys(TEAMS).forEach(function(t){ var o=document.createElement('option'); o.textContent=t; fabT.appendChild(o); });
+document.getElementById('fab').onclick=function(){
+  fabT.value = (filter!=='전체')?filter:'스레드팀';
+  document.getElementById('cText').value='';
+  document.getElementById('scrimC').classList.add('on');
+};
+document.getElementById('cCancel').onclick=function(){ document.getElementById('scrimC').classList.remove('on'); };
+document.getElementById('cGo').onclick=function(){
+  var team=fabT.value, txt=document.getElementById('cText').value.trim()||'새 작업';
+  TASKS.push({id:++uid, team:team, title:txt, stage:0, prog:8, notion:null});
+  document.getElementById('scrimC').classList.remove('on');
+  renderAll(); setView('board');
+};
 
-renderTeams(); renderBoard();
+renderTeams(); renderAll(); setView('office');
 document.getElementById('clock').textContent=nowStr();
 setInterval(function(){ document.getElementById('clock').textContent=nowStr(); }, 1000);
-/* 시뮬레이션(자동 전달) 끔 — 실제 작업은 노션에서 채워짐. 깜빡임 없음. */
 </script>
 </body>
 </html>
