@@ -46,8 +46,7 @@
   .colH .dot{width:9px;height:9px;border-radius:50%}
   .colH .cnt{margin-left:auto; font-size:11px; font-weight:800; background:var(--panel2); border:1px solid var(--line); border-radius:999px; padding:1px 8px; color:var(--sub)}
 
-  .card{background:var(--panel2); border:1px solid var(--line); border-radius:13px; padding:12px; margin-bottom:10px; animation:pop .3s ease}
-  @keyframes pop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .card{background:var(--panel2); border:1px solid var(--line); border-radius:13px; padding:12px; margin-bottom:10px}
   .card .team{font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; display:inline-block}
   .card .tt{font-size:14px; font-weight:700; margin:9px 0 4px; line-height:1.35}
   .card .role{font-size:11.5px; color:var(--muted); display:flex; align-items:center; gap:5px}
@@ -129,19 +128,8 @@ function roleName(team, stage){
   if(stage==="비주얼") return {"유튜브팀":"영상제작","사주팀":"표지디자인"}[team] || "이미지생성";
 }
 
-/* ===== 작업들 ===== */
-var TASKS = [
-  {id:1, team:"스레드팀", title:"AI 오피스 빌드인퍼블릭 글", stage:1, prog:40},
-  {id:2, team:"스레드팀", title:"프롬프트 4요소 노하우 글", stage:3, prog:70},
-  {id:3, team:"블로그팀", title:"'코딩 없이 수익화' 블로그", stage:0, prog:20},
-  {id:4, team:"사주팀", title:"신년운세 무료 리포트 개편", stage:2, prog:55},
-  {id:5, team:"유튜브팀", title:"릴스 3편 · AI 자동화 팁", stage:2, prog:30},
-  {id:6, team:"유튜브팀", title:"롱폼 '8천만원 잃고 재기' 편", stage:1, prog:15},
-  {id:7, team:"마케팅팀", title:"인스타 광고 카피 5종", stage:4, prog:100},
-  {id:8, team:"마케팅팀", title:"전자책 랜딩 후킹 문구", stage:3, prog:85},
-  {id:9, team:"블로그팀", title:"경쟁사 3곳 벤치마킹 정리", stage:4, prog:100},
-  {id:10, team:"사주팀", title:"궁합 리포트 목차 설계", stage:0, prog:8}
-];
+/* ===== 작업들 (노션에서 채워짐. 각 항목에 notion 링크 포함) ===== */
+var TASKS = [];
 
 var filter="전체";
 var board=document.getElementById('board');
