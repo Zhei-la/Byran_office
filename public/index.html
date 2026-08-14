@@ -94,7 +94,7 @@
   <div class="teams" id="teams"></div>
   <div class="board" id="board"></div>
 
-  <div class="foot">AI 직원들이 <b>기획 → 제작 → 비주얼 → 검토</b>까지 자동으로 넘기고, 마지막 <b>대표 컨펌</b>만 기다립니다.</div>
+  <div class="foot">노션에서 작업을 <b>'요청'</b>하면 여기 떠서 <b>기획 → 제작 → 비주얼 → 검토</b>를 거쳐 <b>대표 컨펌</b>으로 옵니다.</div>
 </div>
 
 <div class="scrim" id="scrim">
@@ -169,8 +169,10 @@ function renderBoard(){
       var vis = (stage==="완료")?100:(reviewing?100:t.prog);
       var bar = (stage!=="완료")?'<div class="minibar"><i style="width:'+vis+'%"></i></div>':'';
       var role = roleName(t.team, stage);
+      var nlink = t.notion || 'https://app.notion.com/p/02b64c31f9214159888da0bb6e302bae';
       var acts = reviewing
-        ? '<div class="acts"><button class="btn no" onclick="reject('+t.id+')">🙅 반려</button><button class="btn ok" onclick="approve('+t.id+')">✔ 승인</button></div>'
+        ? '<a class="btn" href="'+nlink+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-top:11px;line-height:1.7">📄 노션에서 결과물 보기</a>'+
+          '<div class="acts"><button class="btn no" onclick="reject('+t.id+')">🙅 반려</button><button class="btn ok" onclick="approve('+t.id+')">✔ 승인</button></div>'
         : '';
       var rej = t.reject ? '<div class="rej-note">↩ 수정요청: '+t.reject+'</div>' : '';
       return '<div class="card'+(reviewing?' review-hl':'')+'">'+
@@ -215,7 +217,7 @@ function tick(){
 renderTeams(); renderBoard();
 document.getElementById('clock').textContent=nowStr();
 setInterval(function(){ document.getElementById('clock').textContent=nowStr(); }, 1000);
-setInterval(tick, 2600);
+/* 시뮬레이션(자동 전달) 끔 — 실제 작업은 노션에서 채워짐. 깜빡임 없음. */
 </script>
 </body>
 </html>
