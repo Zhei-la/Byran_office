@@ -172,3 +172,9 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .link-add{justify-self:start;margin-top:4px}
 @media(max-width:480px){.lbl-sub{display:block;margin:2px 0 0}.link-row{grid-template-columns:1fr auto;grid-template-areas:'type del' 'url url';padding:10px;border:1px solid var(--line);border-radius:3px;background:var(--cream)}.link-row:has(.link-del[hidden]){grid-template-columns:1fr;padding:0;border:0;background:none}.link-type{grid-area:type}.link-del{grid-area:del}.link-url{grid-area:url}}
 .adm-link .sel{white-space:pre-line}
+/* 메인 요금 줄을 누르면 서비스 요금 페이지의 해당 카드로 이동 + 잠깐 강조 */
+.plan[id]{scroll-margin-top:120px}
+@media(max-width:700px){.plan[id]{scroll-margin-top:96px}}
+@keyframes planPing{0%,55%{box-shadow:0 0 0 3px var(--bronze),0 18px 44px #17251c1f}100%{box-shadow:0 0 0 0 transparent}}
+.plan:target,#plan-blog:target + .plan{animation:planPing 3.4s ease-out 1}
+@media(prefers-reduced-motion:reduce){.plan:target,#plan-blog:target + .plan{animation:none;box-shadow:0 0 0 3px var(--bronze)}}
