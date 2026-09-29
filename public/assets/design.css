@@ -136,3 +136,11 @@ a.pf-real:hover .pf-shot img{opacity:.92}
 .adm-login input:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 3px rgba(148,100,58,.15)}
 .adm-login .btn{justify-self:start}
 .adm-side{display:flex;align-items:center;gap:14px}
+/* 메인 가격 요약: 시작 금액만 보여주고 금액 안내로 연결 */
+a.price-row.simple{text-decoration:none;color:inherit;transition:background .2s}
+a.price-row.simple:hover{background:var(--cream)}
+a.price-row.simple:focus-visible{outline-offset:-2px}
+.price-simple .price-row{padding-block:22px}
+.price-val .from{font-family:var(--sans);font-size:.62em;font-weight:500;color:var(--muted);margin-left:3px}
+.price-more{display:flex;justify-content:center;margin-top:28px}
+.price-simple h3 small{letter-spacing:.02em;font-size:12.5px}
