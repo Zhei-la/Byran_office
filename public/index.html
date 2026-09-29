@@ -1,256 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>바이란미디어 · AI 오피스</title>
-<style>
-  :root{--bg:#0a0c11;--panel:#141925;--panel2:#1b2130;--line:#262d3d;--ink:#eaeef6;--sub:#9aa6b8;--muted:#68738a;
-    --brand:#7c9cff;--mint:#34e0a1;--gold:#ffc24b;--pink:#ff7bb0;--violet:#b28dff;--red:#ff6b6b;--orange:#e2661a;--sky:#5ad1ff;}
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{background:radial-gradient(120% 60% at 50% -5%,#16203a 0%,var(--bg) 55%);color:var(--ink);min-height:100vh;
-    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",Segoe UI,Roboto,sans-serif;letter-spacing:-.01em}
-  .wrap{max-width:1440px;margin:0 auto;padding:16px 18px 90px}
-  .top{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-  .logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:19px;
-    background:linear-gradient(135deg,var(--brand),var(--violet));box-shadow:0 6px 16px rgba(124,156,255,.35)}
-  .ttl b{font-size:18px;font-weight:900}
-  .live{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800;color:var(--mint);
-    background:rgba(52,224,161,.12);border:1px solid rgba(52,224,161,.3);padding:3px 9px;border-radius:999px;margin-left:8px}
-  .live i{width:6px;height:6px;border-radius:50%;background:var(--mint);animation:blink 1.3s infinite}
-  .live.off{color:var(--red);background:rgba(255,107,107,.12);border-color:rgba(255,107,107,.3)}
-  .live.off i{background:var(--red);animation:none}
-  @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-  .clock{margin-left:auto;font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
-  .icobtn{flex:none;font-size:12px;font-weight:800;color:var(--sub);text-decoration:none;white-space:nowrap;cursor:pointer;
-    background:var(--panel);border:1px solid var(--line);padding:8px 12px;border-radius:999px}
-  .notionBtn{color:#0a0c11;background:linear-gradient(135deg,var(--brand),var(--violet));border:0}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-  .kpi .n{font-size:26px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
-  .kpi .l{font-size:12px;color:var(--sub);margin-top:6px}
-  .kpi.req .n{color:var(--orange)}.kpi.work .n{color:var(--brand)}.kpi.review .n{color:var(--gold)}.kpi.done .n{color:var(--mint)}
-  .tabs{display:flex;gap:8px;margin-bottom:14px}
-  .tab{font-size:13.5px;font-weight:800;padding:9px 16px;border-radius:11px;cursor:pointer;background:var(--panel);border:1px solid var(--line);color:var(--sub)}
-  .tab.on{background:var(--panel2);color:var(--ink);border-color:#33405c;box-shadow:inset 0 0 0 1px rgba(124,156,255,.25)}
-  .teams{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-  .tchip{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer;background:var(--panel);border:1px solid var(--line);color:var(--sub)}
-  .office{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .dept{background:linear-gradient(180deg,rgba(27,33,48,.9),rgba(20,25,37,.7));border:1px solid var(--line);border-radius:16px;padding:15px 16px}
-  .deptH{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:800;margin-bottom:14px}
-  .deptH .dot{width:10px;height:10px;border-radius:50%}
-  .deptH .deptc{margin-left:auto;font-size:11px;font-weight:800;color:var(--sub);background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
-  .crew-row{display:flex;gap:8px;justify-content:space-between}
-  .crew{flex:1;text-align:center;opacity:.5}
-  .crew.on{opacity:1}
-  .crew .av{width:42px;height:42px;margin:0 auto 5px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:20px}
-  .crew.on .av{animation:breathe 2.6s ease-in-out infinite}
-  @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-  .crew span{font-size:10.5px;color:var(--sub);font-weight:700}
-  .board{display:flex;gap:12px;overflow-x:auto;padding-bottom:10px;scrollbar-width:thin}
-  .board::-webkit-scrollbar{height:8px}.board::-webkit-scrollbar-thumb{background:#2a3346;border-radius:8px}
-  .col{flex:1 0 250px;min-width:250px;background:rgba(20,25,37,.6);border:1px solid var(--line);border-radius:16px;padding:12px 10px}
-  .colH{display:flex;align-items:center;gap:8px;margin:2px 4px 12px;font-size:13.5px;font-weight:800}
-  .colH .dot{width:9px;height:9px;border-radius:50%}
-  .colH .cnt{margin-left:auto;font-size:11px;font-weight:800;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:1px 8px;color:var(--sub)}
-  .card{background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:12px;margin-bottom:10px}
-  .card .team{font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px;display:inline-block}
-  .card .tt{font-size:14px;font-weight:700;margin:9px 0 4px;line-height:1.35}
-  .card .role{font-size:11.5px;color:var(--muted)}
-  .card .role b{color:var(--sub);font-weight:700}
-  .review-hl{border-color:#4a4020;box-shadow:0 0 0 1px rgba(255,194,75,.25)}
-  .acts{display:flex;gap:8px;margin-top:11px}
-  .btn{flex:1;padding:9px 0;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:12.5px;font-weight:800;cursor:pointer;text-align:center}
-  .btn.ok{background:var(--gold);color:#141821;border-color:transparent}
-  .btn.no{background:rgba(255,107,107,.14);color:var(--red);border-color:rgba(255,107,107,.35)}
-  .btn.primary{background:linear-gradient(135deg,var(--brand),var(--violet));color:#0a0c11;border-color:transparent}
-  .rej-note{font-size:11px;color:var(--red);margin-top:8px;background:rgba(255,107,107,.08);border-radius:8px;padding:6px 8px}
-  .res-note{font-size:11px;color:var(--sub);margin-top:8px;background:rgba(255,255,255,.03);border-radius:8px;padding:6px 8px;max-height:54px;overflow:hidden}
-  .empty{color:var(--muted);font-size:13px;text-align:center;padding:34px 10px}
-  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
-  .fab{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:30;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;
-    padding:14px 24px;border-radius:999px;background:linear-gradient(135deg,var(--brand),var(--violet));color:#0a0c11;font-size:15px;font-weight:900;box-shadow:0 12px 30px rgba(124,156,255,.5)}
-  .scrim{position:fixed;inset:0;background:rgba(4,6,10,.65);backdrop-filter:blur(3px);z-index:40;display:none;align-items:center;justify-content:center;padding:20px}
-  .scrim.on{display:flex}
-  .modal{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;width:100%;max-width:440px}
-  .modal h3{font-size:16px;font-weight:800;margin-bottom:6px}.modal p{font-size:12.5px;color:var(--sub);margin-bottom:12px}
-  .field{margin-top:12px}.field label{font-size:11.5px;color:var(--sub);font-weight:700;display:block;margin-bottom:6px}
-  select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:11px;color:var(--ink);font-size:13.5px;padding:11px;font-family:inherit;resize:none}
-  textarea{min-height:84px}.hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5}
-  @media (max-width:720px){.wrap{padding:12px 12px 90px}.kpis{grid-template-columns:repeat(2,1fr)}.office{grid-template-columns:1fr}.col{flex:0 0 84%;min-width:84%}.ttl b{font-size:16px}}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="top">
-    <div class="logo">🏢</div>
-    <div class="ttl"><b>바이란미디어 <span class="live" id="live"><i></i>LIVE</span></b></div>
-    <span class="icobtn" id="refresh">↻ 새로고침</span>
-    <a class="icobtn notionBtn" href="https://app.notion.com/p/02b64c31f9214159888da0bb6e302bae" target="_blank" rel="noopener">🔗 노션</a>
-    <span class="clock" id="clock">—</span>
-  </div>
-  <div class="kpis" id="kpis"></div>
-  <div class="tabs">
-    <div class="tab on" data-v="office" id="tab-office">🏢 오피스</div>
-    <div class="tab" data-v="board" id="tab-board">🗂️ 작업 보드</div>
-  </div>
-  <div class="teams" id="teams"></div>
-  <div id="view-office"><div class="office" id="office"></div></div>
-  <div id="view-board" style="display:none"><div class="board" id="board"></div></div>
-  <div class="foot">＋ 작업 시키기 → 노션에 <b>요청</b> 생성 → AI가 <b>컨펌대기</b>로 → 승인/반려. 반려하면 피드백대로 다시 고쳐요.</div>
-</div>
-<button class="fab" id="fab">＋ 작업 시키기</button>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>바이란 마케팅</title>
+<meta name="description" content="블로그 대행, 스레드 대행, 홈페이지형 블로그와 홈페이지 제작. 문의로 이어지는 마케팅, 바이란 마케팅.">
+<link rel="canonical" href="https://byranmk.com/">
+<meta property="og:url" content="https://byranmk.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="바이란 마케팅">
+<meta property="og:image" content="https://byranmk.com/assets/hero.jpg">
+<meta property="og:title" content="바이란 마케팅">
+<meta property="og:description" content="블로그 대행, 스레드 대행, 홈페이지형 블로그와 홈페이지 제작. 문의로 이어지는 마케팅, 바이란 마케팅.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/base.css"><link rel="stylesheet" href="assets/design.css">
+<meta name="theme-color" content="#181b18"><link rel="icon" href="assets/favicon.svg" type="image/svg+xml"></head>
+<body><a class="skip-link" href="#main-content">본문으로 바로가기</a>
+<header class="hd"><div class="wrap hd-in">
+<a class="logo" href="index.html" aria-label="바이란 마케팅 홈"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<button class="nav-btn" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+<nav class="nav" id="siteNav" aria-label="주 메뉴"><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html">문의하기</a><a class="btn btn-peach btn-sm" href="contact.html#diagnosis">무료 계정 진단</a></nav>
+</div></header>
+<main id="main-content">
+<section class="hero home-hero"><img class="hero-photo" src="assets/hero.jpg" alt="따뜻한 햇빛이 드는 크리에이티브 스튜디오" fetchpriority="high"><div class="wrap hero-in"><div class="hero-copy"><p class="eyebrow">BYRAN MEDIA · DIGITAL MARKETING</p><h1 class="h-xl">좋은 가게가<br>더 많은 사람에게<br><span class="accent">발견되도록.</span></h1><p class="lead">검색되는 블로그, 대화가 시작되는 스레드.<br>우리 가게다운 콘텐츠로 다음 손님을 만납니다.</p><div class="hero-actions"><a class="btn btn-peach" href="contact.html#diagnosis">내 계정 무료로 진단받기 <span aria-hidden="true">↗</span></a><a class="btn btn-line" href="#services">서비스 둘러보기 <span aria-hidden="true">↓</span></a></div></div><div class="hero-note"><span>BRAND, CONTENT & CONNECTION</span><p>꾸준히 쌓이는 콘텐츠.<br>오래 기억되는 브랜드.</p></div><div class="hero-bottom"><span>블로그 · 스레드 · 홈페이지</span><span>작은 시작부터, 바이란과 함께</span><a href="#services" aria-label="서비스로 이동">SCROLL TO EXPLORE ↓</a></div></div></section>
 
-<div class="scrim" id="scrimC"><div class="modal">
-  <h3>📋 작업 지시</h3><p>어느 팀에 무슨 일을 시킬지 정하세요. 노션에 '요청'으로 올라가고, AI가 결과물을 만들어 옵니다.</p>
-  <div class="field"><label>담당 팀</label><select id="cTeam"></select></div>
-  <div class="field"><label>지시 내용</label><textarea id="cText" placeholder="예: AI 오피스 만든 과정 빌드인퍼블릭 스레드 글 1개"></textarea></div>
-  <div class="acts"><button class="btn" id="cCancel">취소</button><button class="btn primary" id="cGo">보내기 🚀</button></div>
-</div></div>
+<section class="sec" id="services"><div class="wrap stack">
+<div class="sec-head" style="margin-bottom:0"><p class="eyebrow">Our Service</p>
+<h2 class="h-lg">우리 가게에 맞는 채널을,<br>꾸준히 운영합니다.</h2>
+<p class="lead">콘텐츠 기획부터 첫 화면의 인상까지.<br>지금 필요한 서비스부터 시작하세요.</p></div>
+<div class="svc-grid"><a class="svc" href="blog.html"><div class="visual photo-visual stats-visual"><picture><source media="(max-width: 1080px)" srcset="assets/svc-blog-stats-wide.jpg"><img src="assets/svc-blog-stats.jpg" alt="직접 운영 중인 네이버 블로그 방문횟수 통계. 개설 한 달이 안 됐고 9월 28일 하루 방문 329회" loading="lazy"></picture><span class="stats-tag">개설 한 달 · 하루 방문 329회</span></div><div class="svc-body">
+<h3>블로그 대행</h3><p>손님이 검색하는 키워드로 글을 기획하고, 이미지까지 넣어 매달 정해진 횟수만큼 발행해요.</p>
+<div class="svc-foot"><span class="svc-price">월 24만 원부터</span><span class="circ" aria-hidden="true">→</span></div></div></a><a class="svc" href="threads.html"><div class="visual photo-visual stats-visual"><picture><source media="(max-width: 1080px)" srcset="assets/svc-threads-stats-wide.jpg"><img src="assets/svc-threads-stats.jpg" alt="직접 운영 중인 스레드 인사이트. 14일 조회수 1,594,103회, 조회한 사람 544,674명" loading="lazy"></picture><span class="stats-tag">개설 초기 · 조회수 159만</span></div><div class="svc-body">
+<h3>스레드 대행</h3><p>가게 분위기에 맞는 말투로 월 20회 이상 글을 올려, 팔로워가 손님이 되는 계정을 만들어요.</p>
+<div class="svc-foot"><span class="svc-price">1개월 35만 원</span><span class="circ" aria-hidden="true">→</span></div></div></a><a class="svc" href="blog-home.html"><div class="visual photo-visual site-visual"><img src="assets/sample-interior-blog.jpg" alt="바이란이 만든 인테리어 업체 홈페이지형 블로그 샘플 시안 첫 화면" loading="lazy"><span class="site-tag">샘플 시안</span></div><div class="svc-body">
+<h3>홈페이지형 블로그 제작</h3><p>블로그 첫 화면을 홈페이지처럼 꾸며 메뉴와 상담 버튼을 한눈에 보여줘요.</p>
+<div class="svc-foot"><span class="svc-price">10만 원</span><span class="circ" aria-hidden="true">→</span></div></div></a><a class="svc" href="website.html"><div class="visual photo-visual site-visual"><img src="assets/sample-interior-home.jpg" alt="바이란이 만든 인테리어 업체 홈페이지 샘플 시안 첫 화면" loading="lazy"><span class="site-tag">샘플 시안</span></div><div class="svc-body">
+<h3>홈페이지 제작</h3><p>업체 소개, 서비스 안내, 문의 동선을 담은 반응형 홈페이지를 만들어요.</p>
+<div class="svc-foot"><span class="svc-price">10만 원</span><span class="circ" aria-hidden="true">→</span></div></div></a></div>
+<div class="diag"><span class="diag-tag">FREE</span>
+<div><h3>운영 중인 블로그·스레드·홈페이지, 무엇이 막혀 있는지 먼저 봐드릴게요.</h3>
+<p>주소만 보내주시면 블로그·스레드는 글 주제와 발행 주기, 프로필을, 홈페이지는 첫 화면과 모바일 화면, 문의 동선을 살펴보고 개선할 점을 정리해 드려요. 진단은 무료예요.</p></div>
+<a class="btn btn-ink" href="contact.html#diagnosis">무료 계정 진단 받기 <span class="arr" aria-hidden="true">→</span></a></div>
+</div></section>
 
-<div class="scrim" id="scrimR"><div class="modal">
-  <h3>🙅 반려 — 수정 요청</h3><p id="rejFor">—</p>
-  <textarea id="rejText" placeholder="뭘 고치면 좋을지 적어주세요. (예: 후크를 더 세게, 사례 1개 추가)"></textarea>
-  <div class="acts"><button class="btn" id="rejCancel">취소</button><button class="btn no" id="rejGo">반려 보내기</button></div>
-</div></div>
+<section class="sec dark about"><span class="bigB" aria-hidden="true">B</span><div class="wrap about-in">
+<div class="about-copy"><p class="eyebrow">About Byran</p>
+<h2 class="h-lg">보이는 데서 끝나지 않고,<br>문의까지 이어지게.</h2>
+<p class="lead">조회수만 높은 계정은 매출로 이어지기 어려워요. 바이란 마케팅은 손님이 어떤 말로 검색하고 어떤 글에 반응하는지부터 봐요. 그다음 약속한 횟수만큼 꾸준히 올리고, 들어온 손님이 바로 문의할 수 있게 동선을 만들어요.</p>
+<a class="btn btn-peach" href="pricing.html">금액 안내 보기 <span class="arr" aria-hidden="true">→</span></a></div>
+<div class="facts">
+<div class="fact"><b>12·20<small>회</small></b><span>블로그 월 발행 횟수</span></div>
+<div class="fact"><b>20+<small>회</small></b><span>스레드 월 발행 횟수</span></div>
+<div class="fact"><b>10<small>만 원</small></b><span>홈페이지형 블로그 · 홈페이지 제작</span></div>
+<div class="fact"><b>3<small>개월</small></b><span>스레드 권장 운영 기간</span></div>
+</div></div></section>
 
-<script>
-var TEAMS={"스레드팀":"#7c9cff","블로그팀":"#34e0a1","사주팀":"#b28dff","유튜브팀":"#ff6b6b","마케팅팀":"#ff7bb0"};
-function tcolor(t){return TEAMS[t]||"#9aa6b8";}
-function roleName(team,stage){
-  if(stage==="기획")return "기획자"; if(stage==="검토")return "검토자";
-  if(stage==="제작")return {"스레드팀":"작가","블로그팀":"작가","사주팀":"사주풀이","유튜브팀":"대본작가","마케팅팀":"카피라이터"}[team]||"작가";
-  if(stage==="비주얼")return {"유튜브팀":"영상제작","사주팀":"표지디자인"}[team]||"이미지생성";
-}
-function roleEmoji(s){return {"기획":"🧭","제작":"✍️","비주얼":"🎨","검토":"🔍"}[s]||"👤";}
-var COLS=[
-  {label:"요청·대기",dot:"#e2661a",st:["요청","대기"]},
-  {label:"작업중",dot:"#7c9cff",st:["작업중","수정요청","막힘"]},
-  {label:"컨펌대기",dot:"#ffc24b",st:["컨펌대기"]},
-  {label:"완료",dot:"#34e0a1",st:["완료"]}
-];
-var TASKS=[],lastJson="",filter="전체",view="office",busy=false;
+<section class="sec"><div class="wrap">
+<div class="sec-head split"><div><p class="eyebrow">Price</p><h2 class="h-lg">금액은 처음부터<br>그대로 안내해요.</h2></div>
+<a class="text-link" href="pricing.html">금액 자세히 보기 <span class="arr" aria-hidden="true">→</span></a></div>
+<div class="price-list"><div class="price-row multi"><h3>블로그 대행<small>2가지 플랜</small></h3><div class="plan-lines"><div class="pline"><p><span class="pl-tag">BASIC</span>월 12회 발행 · 1,500자 이내 · 이미지 7장 이상</p><div class="price-val"><small>월</small>24만 원</div></div><div class="pline"><p><span class="pl-tag">STANDARD</span>월 20회 발행 · 2,000자 이내 · 이미지 10장 이상</p><div class="price-val"><small>월</small>34만 원</div></div></div></div><div class="price-row multi"><h3>스레드 대행<small>기간 선택</small></h3><div class="plan-lines"><div class="pline"><p><span class="pl-tag">1개월</span>월 20회 이상 발행 · 1개월 운영</p><div class="price-val">35만 원</div></div><div class="pline"><p><span class="pl-tag">2개월</span>월 20회 이상 발행 · 2개월 운영</p><div class="price-val">50만 원</div></div></div></div><div class="price-row"><h3>홈페이지형 블로그 제작<small>1회</small></h3><p>블로그 대문 · 메뉴 카드 · 상담 버튼 · PC·모바일</p><div class="price-val">10만 원</div></div><div class="price-row"><h3>홈페이지 제작<small>1회</small></h3><p>반응형 홈페이지 · 소개·서비스·문의 구성</p><div class="price-val">10만 원</div></div><div class="price-row"><h3>무료 계정 진단<small>FREE</small></h3><p>블로그·스레드·홈페이지 점검과 개선 포인트 정리</p><div class="price-val"><span class="free">0원</span></div></div></div>
+<div class="note note-duo"><p class="note-head">블로그도 스레드도, 꾸준함이 답이에요.</p>
+<div class="note-col"><span class="note-lbl">블로그</span><p>정해진 권장 기간은 없어요. 몰아서 올리기보다 꾸준히 이어가는 게 중요해요. 손님이 가게를 검색으로 찾는 창구라 사업자라면 꼭 관리해야 해요.</p></div>
+<div class="note-col"><span class="note-lbl">스레드</span><p>블로그보다 반응이 빨리 와서 성과를 내기 수월한 편이에요. 계정이 자리를 잡으려면 3개월은 이어서 운영하시길 권해요.</p></div></div>
+</div></section>
 
-function nowStr(){try{return new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return "--:--";}}
-function hexa(hex,a){var h=hex.replace('#','');return 'rgba('+parseInt(h.substr(0,2),16)+','+parseInt(h.substr(2,2),16)+','+parseInt(h.substr(4,2),16)+','+a+')';}
-function esc(s){return (s||'').replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+<section class="sec cream"><div class="wrap process-in">
+<div class="sec-head"><p class="eyebrow">Process</p><h2 class="h-lg">상담부터 운영까지,<br>네 단계로 진행해요.</h2>
+<p class="lead">처음이라면 무료 계정 진단부터 시작해 보세요.</p></div>
+<div class="steps"><div class="step"><span class="step-n">01</span><h3>무료 진단</h3><p>지금 운영 중인 계정과 업종, 주변 경쟁 매장을 먼저 살펴봐요.</p></div><div class="step"><span class="step-n">02</span><h3>운영 기획</h3><p>키워드, 말투, 발행 일정을 사장님과 함께 정해요.</p></div><div class="step"><span class="step-n">03</span><h3>발행·운영</h3><p>약속한 횟수만큼 글을 쓰고 꾸준히 발행해요.</p></div><div class="step"><span class="step-n">04</span><h3>점검·조정</h3><p>반응을 확인하고 다음 달 글 방향을 조정해요.</p></div></div>
+</div></section>
 
-function loadState(force){
-  fetch('/api/state').then(function(r){return r.json();}).then(function(d){
-    document.getElementById('live').className='live'+(d.connected?'':' off');
-    var arr=d.tasks||[]; var j=JSON.stringify(arr);
-    if(force)lastJson='';
-    if(j!==lastJson){ lastJson=j; TASKS=arr; renderAll(); }
-  }).catch(function(){ document.getElementById('live').className='live off'; });
-}
-
-function renderTeams(){
-  var box=document.getElementById('teams'); box.innerHTML='';
-  ['전체'].concat(Object.keys(TEAMS)).forEach(function(t){
-    var el=document.createElement('div'); el.className='tchip'+(t===filter?' on':''); el.textContent=t;
-    if(t===filter){el.style.color='#0a0c11';el.style.borderColor='transparent';el.style.background=t==='전체'?'linear-gradient(135deg,#7c9cff,#b28dff)':tcolor(t);}
-    el.onclick=function(){filter=t;renderTeams();renderOffice();renderBoard();};
-    box.appendChild(el);
-  });
-}
-function inFilter(t){return filter==='전체'||t.team===filter;}
-function isActive(s){return s==='요청'||s==='대기'||s==='작업중'||s==='수정요청'||s==='막힘';}
-
-function renderKPIs(){
-  var c={req:0,work:0,review:0,done:0};
-  TASKS.forEach(function(t){var s=t.status;
-    if(s==='요청'||s==='대기')c.req++; else if(s==='컨펌대기')c.review++; else if(s==='완료')c.done++; else c.work++;});
-  document.getElementById('kpis').innerHTML=
-    kpi('req','요청',c.req)+kpi('work','작업중',c.work)+kpi('review','컨펌대기',c.review)+kpi('done','완료',c.done);
-}
-function kpi(c,l,n){return '<div class="kpi '+c+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
-
-function renderOffice(){
-  var box=document.getElementById('office');var html='';
-  Object.keys(TEAMS).forEach(function(team){
-    if(filter!=='전체'&&filter!==team)return;
-    var c=TEAMS[team];var mine=TASKS.filter(function(t){return t.team===team;});
-    var act=mine.filter(function(t){return isActive(t.status);}).length;
-    var rev=mine.filter(function(t){return t.status==='컨펌대기';}).length;
-    var on=act>0;
-    var crew=[["기획","기획자"],["제작",roleName(team,"제작")],["비주얼",roleName(team,"비주얼")],["검토","검토자"]].map(function(r){
-      return '<div class="crew'+(on?' on':'')+'"><div class="av" style="background:'+hexa(c,.18)+';border-color:'+(on?c:'var(--line)')+'">'+roleEmoji(r[0])+'</div><span>'+r[1]+'</span></div>';
-    }).join('');
-    html+='<div class="dept"><div class="deptH"><span class="dot" style="background:'+c+'"></span>'+team+
-      '<span class="deptc">'+(act?('작업중 '+act):'대기')+(rev?(' · 컨펌 '+rev):'')+'</span></div><div class="crew-row">'+crew+'</div></div>';
-  });
-  box.innerHTML=html||'<div class="empty">해당 팀이 없어요.</div>';
-}
-
-function renderBoard(){
-  var b=document.getElementById('board'),html='';
-  COLS.forEach(function(col){
-    var arr=TASKS.filter(function(t){return col.st.indexOf(t.status)>=0&&inFilter(t);});
-    var cards=arr.map(function(t){
-      var tc=tcolor(t.team),reviewing=(t.status==='컨펌대기');
-      var acts=reviewing
-        ? '<a class="btn" href="'+(t.url||'#')+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;margin-top:11px;line-height:1.7">📄 노션에서 결과물 보기</a>'+
-          '<div class="acts"><button class="btn no" onclick="rejectOpen(\''+t.id+'\')">🙅 반려</button><button class="btn ok" onclick="approve(\''+t.id+'\')">✔ 승인</button></div>'
-        : '';
-      var rej=(t.status==='수정요청'&&t.feedback)?'<div class="rej-note">↩ 수정요청: '+esc(t.feedback)+'</div>':'';
-      var resv=(t.result&&(reviewing||t.status==='완료'))?'<div class="res-note">'+esc(t.result)+'</div>':'';
-      var statusTag=(t.status!=='요청'&&t.status!=='완료')?' · '+t.status:'';
-      return '<div class="card'+(reviewing?' review-hl':'')+'">'+
-        '<span class="team" style="color:'+tc+';background:'+hexa(tc,.14)+'">'+esc(t.team||'미지정')+'</span>'+
-        '<div class="tt">'+esc(t.title)+'</div>'+
-        '<div class="role">👤 <b>'+esc(t.person||t.status)+'</b>'+statusTag+(t.status==='완료'?' ✅':'')+'</div>'+
-        resv+rej+acts+'</div>';
-    }).join('')||'<div style="color:var(--muted);font-size:12px;padding:6px 4px">—</div>';
-    html+='<div class="col"><div class="colH"><span class="dot" style="background:'+col.dot+'"></span>'+col.label+
-          '<span class="cnt">'+arr.length+'</span></div>'+cards+'</div>';
-  });
-  b.innerHTML=html;
-}
-function renderAll(){renderKPIs();renderOffice();renderBoard();}
-
-function setView(v){view=v;
-  document.getElementById('tab-office').classList.toggle('on',v==='office');
-  document.getElementById('tab-board').classList.toggle('on',v==='board');
-  document.getElementById('view-office').style.display=v==='office'?'':'none';
-  document.getElementById('view-board').style.display=v==='board'?'':'none';
-}
-document.getElementById('tab-office').onclick=function(){setView('office');};
-document.getElementById('tab-board').onclick=function(){setView('board');};
-document.getElementById('refresh').onclick=function(){loadState(true);};
-
-function post(url,body,then){
-  if(busy)return; busy=true;
-  fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
-    .then(function(r){return r.json();}).then(function(d){busy=false; if(d.error){alert('오류: '+d.error);} loadState(true); if(then)then();})
-    .catch(function(e){busy=false;alert('연결 오류: '+e);});
-}
-function approve(id){ post('/api/status',{id:id,status:'완료'}); }
-var rejId=null;
-function rejectOpen(id){rejId=id;var t=TASKS.filter(function(x){return x.id===id;})[0];
-  document.getElementById('rejFor').textContent='"'+(t?t.title:'')+'"'; document.getElementById('rejText').value='';
-  document.getElementById('scrimR').classList.add('on');}
-document.getElementById('rejCancel').onclick=function(){document.getElementById('scrimR').classList.remove('on');};
-document.getElementById('rejGo').onclick=function(){
-  var fb=document.getElementById('rejText').value.trim()||'수정 요청';
-  document.getElementById('scrimR').classList.remove('on');
-  post('/api/status',{id:rejId,status:'수정요청',feedback:fb});
-};
-
-var cSel=document.getElementById('cTeam');
-Object.keys(TEAMS).forEach(function(t){var o=document.createElement('option');o.textContent=t;cSel.appendChild(o);});
-document.getElementById('fab').onclick=function(){cSel.value=(filter!=='전체')?filter:'스레드팀';document.getElementById('cText').value='';document.getElementById('scrimC').classList.add('on');};
-document.getElementById('cCancel').onclick=function(){document.getElementById('scrimC').classList.remove('on');};
-document.getElementById('cGo').onclick=function(){
-  var team=cSel.value,txt=document.getElementById('cText').value.trim()||'새 작업';
-  document.getElementById('scrimC').classList.remove('on');
-  post('/api/task',{team:team,text:txt},function(){setView('board');});
-};
-
-renderTeams(); renderAll(); setView('office');
-document.getElementById('clock').textContent=nowStr();
-setInterval(function(){document.getElementById('clock').textContent=nowStr();},1000);
-loadState(true);
-setInterval(function(){loadState(false);},15000);
-</script>
+<section class="sec"><div class="wrap">
+<div class="sec-head split"><div><p class="eyebrow">Portfolio</p><h2 class="h-lg">작업 사례</h2>
+<p class="lead">서비스별 사례는 각 안내 페이지와 포트폴리오 페이지에서 볼 수 있어요.</p></div>
+<a class="text-link" href="portfolio.html">포트폴리오 보기 <span class="arr" aria-hidden="true">→</span></a></div>
+<div class="pf-grid"><a class="pf-card" href="blog.html" style="text-decoration:none;color:inherit"><div class="pf-thumb"><span class="pf-index">01</span><span>작업 사례 업데이트 예정</span></div><div class="pf-meta"><span class="pf-cat">블로그 대행</span><h3>블로그 대행 사례 보기</h3></div></a><a class="pf-card" href="threads.html" style="text-decoration:none;color:inherit"><div class="pf-thumb"><span class="pf-index">02</span><span>작업 사례 업데이트 예정</span></div><div class="pf-meta"><span class="pf-cat">스레드 대행</span><h3>스레드 대행 사례 보기</h3></div></a><a class="pf-card" href="blog-home.html" style="text-decoration:none;color:inherit"><div class="pf-thumb"><span class="pf-index">03</span><span>작업 사례 업데이트 예정</span></div><div class="pf-meta"><span class="pf-cat">홈페이지형 블로그 제작</span><h3>홈페이지형 블로그 제작 사례 보기</h3></div></a><a class="pf-card" href="website.html" style="text-decoration:none;color:inherit"><div class="pf-thumb"><span class="pf-index">04</span><span>작업 사례 업데이트 예정</span></div><div class="pf-meta"><span class="pf-cat">홈페이지 제작</span><h3>홈페이지 제작 사례 보기</h3></div></a></div>
+</div></section>
+</main>
+<section class="cta"><div class="wrap cta-in"><div>
+<h2 class="h-lg">사장님 가게의 다음 손님,<br>바이란 마케팅과 만들어요.</h2><p>문의를 남겨주시면 남겨주신 연락처로 직접 연락드려요. 블로그·스레드·홈페이지 주소를 함께 적어주시면 더 빠르게 안내해 드려요.</p></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-peach" href="contact.html#inquiry">문의 남기기 <span class="arr" aria-hidden="true">→</span></a><a class="btn btn-line" href="contact.html#diagnosis">무료 계정 진단</a></div>
+</div></section>
+<footer class="ft"><div class="wrap">
+<div class="ft-top"><a class="logo" href="index.html"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<nav class="ft-nav" aria-label="하단 메뉴"><a href="index.html">홈</a><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html">문의하기</a></nav></div>
+<!-- 공개 전 사업자등록번호, 통신판매업신고, 주소를 확정해 추가하세요. --><div class="biz"><span><b>상호</b>바이란미디어</span><span><b>대표</b>김가영</span><span><b>문의</b><a href="contact.html#inquiry">홈페이지 문의 남기기</a></span><span><b>카카오톡</b><a href="https://open.kakao.com/me/byran_Marketing" target="_blank" rel="noopener">open.kakao.com/me/byran_Marketing</a></span></div>
+<div class="copyright"><span>© 2026 BYRAN MEDIA. All rights reserved.</span><span>블로그 대행 · 스레드 대행 · 홈페이지형 블로그 · 홈페이지 제작</span></div>
+</div></footer>
+<script src="assets/site.js" defer></script>
 </body>
 </html>

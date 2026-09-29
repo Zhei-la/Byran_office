@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>문의하기 | 바이란 마케팅</title>
+<meta name="description" content="문의 남기기와 무료 계정 진단 신청.">
+<link rel="canonical" href="https://byranmk.com/contact">
+<meta property="og:url" content="https://byranmk.com/contact">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="바이란 마케팅">
+<meta property="og:image" content="https://byranmk.com/assets/hero.jpg">
+<meta property="og:title" content="문의하기 | 바이란 마케팅">
+<meta property="og:description" content="문의 남기기와 무료 계정 진단 신청.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/base.css"><link rel="stylesheet" href="assets/design.css">
+<meta name="theme-color" content="#181b18"><link rel="icon" href="assets/favicon.svg" type="image/svg+xml"></head>
+<body><a class="skip-link" href="#main-content">본문으로 바로가기</a>
+<header class="hd"><div class="wrap hd-in">
+<a class="logo" href="index.html" aria-label="바이란 마케팅 홈"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<button class="nav-btn" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+<nav class="nav" id="siteNav" aria-label="주 메뉴"><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html" aria-current="page">문의하기</a><a class="btn btn-peach btn-sm" href="contact.html#diagnosis">무료 계정 진단</a></nav>
+</div></header>
+<main id="main-content">
+<section class="phero"><div class="wrap phero-in" style="grid-template-columns:1fr">
+<div class="phero-copy"><nav class="crumbs" aria-label="현재 위치"><a href="index.html">홈</a><span aria-hidden="true">/</span><span>문의하기</span></nav>
+<p class="eyebrow">Contact</p><h1 class="h-xl">문의하기</h1>
+<p class="lead">문의를 남겨주시면 내용을 확인하고 남겨주신 연락처로 직접 연락드려요.</p></div>
+</div></section>
+
+<section class="sec"><div class="wrap contact-in">
+<div>
+<div class="kakao-card"><p class="eyebrow">How it works</p><h2>문의는 이렇게 진행돼요</h2>
+<ol class="flow">
+<li><b>문의 남기기</b><span>연락처나 이메일과 함께 궁금한 점을 남겨주세요.</span></li>
+<li><b>내용 확인</b><span>블로그·스레드·홈페이지 주소를 남기셨다면 함께 살펴봐요.</span></li>
+<li><b>연락드리기</b><span>남겨주신 전화번호나 이메일로 직접 연락드려요.</span></li>
+</ol></div>
+
+<div class="diag-card" id="diagnosis"><p class="eyebrow" style="color:var(--bronze)">Free</p><h2>무료 계정 진단</h2>
+<p>블로그, 스레드, 홈페이지 모두 진단해 드려요. 운영 중인 주소를 남겨주시면 아래 내용을 살펴보고 개선할 점을 정리해 드려요.</p>
+<div class="diag-groups">
+<div class="diag-group"><h3>블로그</h3><ul class="check-list"><li><span>손님이 찾는 키워드로 글을 쓰고 있는지</span></li><li><span>꾸준히 올라오고 있는지</span></li><li><span>대문과 메뉴가 한눈에 들어오는지</span></li></ul></div>
+<div class="diag-group"><h3>스레드</h3><ul class="check-list"><li><span>프로필만 봐도 무엇을 파는지 보이는지</span></li><li><span>글에 반응이 오고 있는지</span></li><li><span>스토어나 문의로 이어지는 길이 있는지</span></li></ul></div>
+<div class="diag-group"><h3>홈페이지</h3><ul class="check-list"><li><span>첫 화면에서 어떤 곳인지 바로 보이는지</span></li><li><span>휴대폰에서 보기 편한지</span></li><li><span>문의 버튼을 쉽게 찾을 수 있는지</span></li></ul></div>
+</div></div>
+</div>
+
+<div class="form-card" id="inquiry"><header><h2>문의 남기기</h2><p>연락처와 이메일 중 하나는 꼭 적어주세요. <span class="req">*</span> 표시는 필수 항목이에요.</p></header>
+<form class="form" id="inqForm" novalidate>
+<div class="field"><label for="inqName">상호 / 성함 <span class="req">*</span></label><input id="inqName" name="name" type="text" autocomplete="name" maxlength="100" required placeholder="예: 바른필라테스 / 홍길동"></div>
+<div class="row2">
+<div class="field"><label for="inqPhone">연락처</label><input id="inqPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" placeholder="예: 010-1234-5678"></div>
+<div class="field"><label for="inqEmail">이메일</label><input id="inqEmail" name="email" type="email" inputmode="email" autocomplete="email" maxlength="255" placeholder="예: hello@example.com"></div>
+</div>
+<div class="field"><label for="inqBiz">업종</label><input id="inqBiz" name="business" type="text" maxlength="200" placeholder="예: 필라테스, 스마트스토어 식품"></div>
+<div class="field"><span class="lbl" id="svcLbl">문의 서비스 (여러 개 선택 가능)</span><div class="opts" role="group" aria-labelledby="svcLbl"><label class="opt"><input type="checkbox" name="svc" id="svc-diag" value="무료 계정 진단"><span>무료 계정 진단</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-blog" value="블로그 대행"><span>블로그 대행</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-threads" value="스레드 대행"><span>스레드 대행</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-bloghome" value="홈페이지형 블로그 제작"><span>홈페이지형 블로그 제작</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-website" value="홈페이지 제작"><span>홈페이지 제작</span></label></div></div>
+<div class="field"><label for="inqLink">블로그·스레드·홈페이지 주소</label><input id="inqLink" name="link" type="text" inputmode="url" maxlength="300" placeholder="예: blog.naver.com/아이디, threads.net/@아이디, 우리가게.com"></div>
+<div class="field"><label for="inqMsg">문의 내용</label><textarea id="inqMsg" name="message" maxlength="3000" placeholder="예: 블로그를 3개월째 못 올리고 있어요. 월 12회 플랜이 궁금해요."></textarea></div>
+<div class="hp" aria-hidden="true"><label for="inqWebsite">이 칸은 비워두세요</label><input id="inqWebsite" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+<div class="consent"><label class="consent-check"><input id="inqAgree" name="agree" type="checkbox" required><span>개인정보 수집·이용에 동의합니다 <span class="req">*</span></span></label>
+<details class="consent-more"><summary>자세히 보기</summary><p>수집 항목: 상호·성함, 연락처, 이메일, 업종, 블로그·스레드·홈페이지 주소, 문의 내용<br>이용 목적: 문의 확인과 답변 연락<br>보관 기간: 문의 처리 후 1년 뒤 파기<br>동의하지 않으셔도 되지만, 이 경우 문의를 남기실 수 없어요.</p></details></div>
+<div class="send-row"><button class="btn btn-peach" id="inqSend" type="submit">문의 남기기 <span class="arr" aria-hidden="true">→</span></button></div>
+<p class="status" id="inqStatus" role="status" aria-live="polite"></p>
+</form>
+<div class="sent" id="inqDone" hidden><p class="eyebrow" style="color:var(--bronze)">Received</p><h2>문의가 접수됐어요</h2><p>내용을 확인하고 남겨주신 연락처로 연락드릴게요.</p><button class="btn btn-outline" type="button" id="inqAgain">문의 하나 더 남기기</button></div>
+</div>
+</div></section>
+</main>
+<footer class="ft"><div class="wrap">
+<div class="ft-top"><a class="logo" href="index.html"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<nav class="ft-nav" aria-label="하단 메뉴"><a href="index.html">홈</a><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html">문의하기</a></nav></div>
+<!-- 공개 전 사업자등록번호, 통신판매업신고, 주소를 확정해 추가하세요. --><div class="biz"><span><b>상호</b>바이란미디어</span><span><b>대표</b>김가영</span><span><b>문의</b><a href="contact.html#inquiry">홈페이지 문의 남기기</a></span><span><b>카카오톡</b><a href="https://open.kakao.com/me/byran_Marketing" target="_blank" rel="noopener">open.kakao.com/me/byran_Marketing</a></span></div>
+<div class="copyright"><span>© 2026 BYRAN MEDIA. All rights reserved.</span><span>블로그 대행 · 스레드 대행 · 홈페이지형 블로그 · 홈페이지 제작</span></div>
+</div></footer>
+<script src="assets/site.js" defer></script>
+</body>
+</html>

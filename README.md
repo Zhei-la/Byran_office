@@ -1,47 +1,31 @@
-# 바이란미디어 AI 오피스 — 배포 안내
+# 바이란 마케팅 홈페이지 (byranmk.com)
 
-폰에서 URL로 볼 수 있는 "실시간 작업 현황판" 웹앱입니다.
-GitHub에 올리고 Railway에 연결하면, 앞으로는 **코드가 바뀔 때마다 자동으로 배포**됩니다.
+블로그 대행 · 스레드 대행 · 홈페이지형 블로그 제작 · 홈페이지 제작 안내 사이트.
 
----
+## 구성
+- `public/` — 홈페이지 8쪽 + 관리자 문의함(`/admin`) + 이미지·스타일·스크립트
+- `server.js` — Express 서버
+  - `POST /api/inquiry` : 문의하기 접수 (이름, 연락처/이메일, 업종, 서비스, 주소, 내용, 개인정보 동의)
+  - `/admin` : 관리자 문의함 (비밀번호 로그인, 상태 신규/연락함/완료/스팸, 메모, 삭제)
+  - `GET /healthz` : 상태 확인
 
-## 무엇이 들어있나
-- `public/index.html` — 앱 화면 (오피스 뷰 + 작업 보드)
-- `server.js` — 이 파일을 Railway가 실행해서 웹사이트로 띄웁니다
-- `package.json` / `Procfile` — 실행 방법 설정
-- `/api/state` — (지금은 목업) 나중에 노션과 연결되는 자리
+## 환경변수 (Railway → Variables)
+| 이름 | 내용 |
+|---|---|
+| `DATABASE_URL` | Railway PostgreSQL 연결 주소 (`${{Postgres.DATABASE_URL}}`) |
+| `ADMIN_PASSWORD` | 관리자 문의함 비밀번호 |
+| `SESSION_SECRET` | 로그인 쿠키 서명용 긴 무작위 문자열 |
 
----
+`DATABASE_URL`이 없으면 `data/inquiries.json`에 저장합니다 (개발용 — Railway에서는 재배포 때 사라지므로 반드시 PostgreSQL 연결).
 
-## 한 번만 하면 되는 배포 순서
-
-### 1) GitHub에 올리기
-- github.com 에서 새 저장소(repository)를 하나 만든다. (예: `byran-office`)
-- 이 폴더 전체를 그 저장소에 올린다(push).
-
-### 2) Railway에 연결하기
-- railway.app 접속 → **New Project → Deploy from GitHub repo**
-- 방금 만든 저장소를 선택한다.
-- Railway가 자동으로 `npm install` → `npm start` 를 실행하고 URL을 만들어 준다.
-- **Settings → Networking → Generate Domain** 을 누르면 공개 주소(URL)가 나온다.
-
-### 3) 폰에서 확인
-- 그 URL을 폰 브라우저에서 열면 끝. 홈 화면에 추가해두면 앱처럼 쓸 수 있다.
-
-> 이후에는 코드를 GitHub에 push할 때마다 Railway가 **자동으로 다시 배포**합니다.
-
----
-
-## 다음 단계 (2단계 — 진짜 데이터 연결)
-지금은 캐릭터가 자동으로 움직이는 데모입니다.
-노션에 "직원 / 프로젝트 / 태스크 / 상태" DB를 만들고 `/api/state` 를 노션과 연결하면,
-화면이 **실제 작업 상태**로 움직이게 됩니다.
-
----
-
-## 로컬에서 미리 실행해보기 (선택)
-```
+## 로컬 실행
+```bash
 npm install
-npm start
+ADMIN_PASSWORD=test SESSION_SECRET=dev npm start   # http://localhost:3000
 ```
-브라우저에서 http://localhost:3000 접속.
+
+## 수정할 곳
+- 문구·가격: `public/*.html`
+- 디자인: `public/assets/design.css` (기본 스타일은 `base.css`)
+- 동작: `public/assets/site.js`, 관리자 문의함 `public/assets/admin.js`
+- 사업자등록번호·통신판매업신고번호·주소: 각 페이지 하단 `<div class="biz">` (아직 미입력)

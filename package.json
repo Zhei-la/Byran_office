@@ -1,15 +1,17 @@
 {
-  "name": "byran-media-ai-office",
+  "name": "byranmk",
   "version": "1.0.0",
-  "description": "바이란미디어 AI 오피스 - 실시간 작업 현황판",
   "private": true,
+  "description": "바이란 마케팅 홈페이지 (byranmk.com) — 정적 페이지 + 문의 접수 + 관리자 문의함",
+  "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
+  "engines": { "node": ">=20" },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.21.2",
+    "helmet": "^7.2.0",
+    "pg": "^8.13.1"
   }
 }

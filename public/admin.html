@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>문의함 | 바이란 마케팅</title>
+<meta name="description" content="홈페이지로 들어온 문의 관리.">
+<meta property="og:title" content="문의함 | 바이란 마케팅">
+<meta property="og:description" content="홈페이지로 들어온 문의 관리.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="assets/base.css"><link rel="stylesheet" href="assets/design.css">
+<meta name="theme-color" content="#181b18"><link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><meta name="robots" content="noindex,nofollow">
+</head>
+<body><a class="skip-link" href="#main-content">본문으로 바로가기</a>
+<header class="hd"><div class="wrap hd-in">
+<a class="logo" href="index.html" aria-label="바이란 마케팅 홈"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<button class="nav-btn" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+<nav class="nav" id="siteNav" aria-label="주 메뉴"><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html">문의하기</a><a class="btn btn-peach btn-sm" href="contact.html#diagnosis">무료 계정 진단</a></nav>
+</div></header>
+<main id="main-content">
+<section class="phero"><div class="wrap phero-in" style="grid-template-columns:1fr">
+<div class="phero-copy"><nav class="crumbs" aria-label="현재 위치"><a href="index.html">홈</a><span aria-hidden="true">/</span><span>관리자</span></nav>
+<p class="eyebrow">Admin</p><h1 class="h-xl">문의함</h1>
+<p class="lead">홈페이지 문의하기로 들어온 문의를 모아 보는 곳이에요. 연락한 문의는 상태를 바꾸고 메모를 남겨두세요.</p></div>
+</div></section>
+<section class="sec admin-sec"><div class="wrap">
+<div id="admState" class="adm-state"><p>문의함을 여는 중이에요…</p></div>
+<div id="admApp" hidden>
+<div class="adm-bar">
+<div class="tabs" role="group" aria-label="상태별 보기" id="admTabs">
+<button type="button" data-st="all" aria-pressed="true">전체 <span data-count="all">0</span></button>
+<button type="button" data-st="new" aria-pressed="false">신규 <span data-count="new">0</span></button>
+<button type="button" data-st="contacted" aria-pressed="false">연락함 <span data-count="contacted">0</span></button>
+<button type="button" data-st="done" aria-pressed="false">완료 <span data-count="done">0</span></button>
+<button type="button" data-st="spam" aria-pressed="false">스팸 <span data-count="spam">0</span></button>
+</div>
+<div class="adm-side"><p class="adm-note">로그인한 관리자만 볼 수 있어요.</p><button type="button" class="btn btn-outline btn-sm" id="admLogout" hidden>로그아웃</button></div>
+</div>
+<div id="admList" class="adm-list"></div>
+<div id="admEmpty" class="empty" hidden><div><h3>아직 들어온 문의가 없어요.</h3><p>문의하기 페이지에서 문의가 남겨지면 여기에 바로 나타나요.</p></div><a class="btn btn-ink" href="contact.html#inquiry">문의하기 페이지 보기 <span class="arr" aria-hidden="true">→</span></a></div>
+</div>
+</div></section>
+</main>
+<footer class="ft"><div class="wrap">
+<div class="ft-top"><a class="logo" href="index.html"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<nav class="ft-nav" aria-label="하단 메뉴"><a href="index.html">홈</a><a href="blog.html">블로그 대행</a><a href="threads.html">스레드 대행</a><a href="blog-home.html">홈페이지형 블로그</a><a href="website.html">홈페이지 제작</a><a href="pricing.html">금액 안내</a><a href="portfolio.html">포트폴리오</a><a href="contact.html">문의하기</a></nav></div>
+<!-- 공개 전 사업자등록번호, 통신판매업신고, 주소를 확정해 추가하세요. --><div class="biz"><span><b>상호</b>바이란미디어</span><span><b>대표</b>김가영</span><span><b>문의</b><a href="contact.html#inquiry">홈페이지 문의 남기기</a></span><span><b>카카오톡</b><a href="https://open.kakao.com/me/byran_Marketing" target="_blank" rel="noopener">open.kakao.com/me/byran_Marketing</a></span></div>
+<div class="copyright"><span>© 2026 BYRAN MEDIA. All rights reserved.</span><span>블로그 대행 · 스레드 대행 · 홈페이지형 블로그 · 홈페이지 제작</span></div>
+</div></footer>
+<script src="assets/site.js" defer></script>
+<script src="assets/admin.js" defer></script>
+</body>
+</html>
