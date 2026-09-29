@@ -48,6 +48,12 @@
   // 포트폴리오 필터
   var tabs = document.querySelectorAll('[data-filter]');
   if (tabs.length) {
+    // 메인에서 portfolio.html#blog 처럼 들어오면 해당 서비스만 보여주기
+    setTimeout(function () {
+      var key = (location.hash || '').replace('#', '');
+      var t = key && document.querySelector('[data-filter="' + key + '"]');
+      if (t) t.click();
+    }, 0);
     tabs.forEach(function (b) {
       b.addEventListener('click', function () {
         tabs.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
@@ -113,6 +119,49 @@
     window.addEventListener('hashchange', function () { applyHash(true); });
 
     function val(id) { var e = document.getElementById(id); return e ? e.value.trim() : ''; }
+
+    // 주소 여러 개: 채널 종류를 고르고 주소를 적는 줄을 추가·삭제
+    var linksBox = document.getElementById('inqLinks');
+    var addLink = document.getElementById('inqAddLink');
+    var MAX_LINKS = 5;
+    var HINT = { '블로그': '예: blog.naver.com/아이디', '스레드': '예: threads.net/@아이디', '홈페이지': '예: 회사홈페이지.com', '인스타그램': '예: instagram.com/아이디', '기타': '주소를 적어주세요' };
+    function rows() { return linksBox ? Array.prototype.slice.call(linksBox.querySelectorAll('.link-row')) : []; }
+    function syncRows() {
+      var list = rows();
+      list.forEach(function (r) { r.querySelector('.link-del').hidden = list.length < 2; });
+      if (addLink) addLink.hidden = list.length >= MAX_LINKS;
+    }
+    function wireRow(r) {
+      var sel = r.querySelector('.link-type'), inp = r.querySelector('.link-url');
+      sel.addEventListener('change', function () { inp.placeholder = HINT[sel.value] || ''; });
+      r.querySelector('.link-del').addEventListener('click', function () { r.remove(); syncRows(); var f = rows()[0]; if (f) f.querySelector('.link-url').focus(); });
+    }
+    if (linksBox) {
+      rows().forEach(wireRow);
+      var seq = 1;
+      addLink.addEventListener('click', function () {
+        if (rows().length >= MAX_LINKS) return;
+        seq += 1;
+        var r = rows()[0].cloneNode(true);
+        var sel = r.querySelector('.link-type'), inp = r.querySelector('.link-url');
+        sel.id = 'inqLinkType' + seq; inp.id = 'inqLink' + seq; inp.value = '';
+        var used = rows().map(function (x) { return x.querySelector('.link-type').value; });
+        var next = ['블로그', '스레드', '홈페이지', '인스타그램', '기타'].filter(function (t) { return used.indexOf(t) < 0; })[0] || '기타';
+        sel.value = next; inp.placeholder = HINT[next];
+        linksBox.appendChild(r); wireRow(r); syncRows(); inp.focus();
+      });
+      syncRows();
+    }
+    function collectLinks() {
+      return rows().map(function (r) {
+        return { type: r.querySelector('.link-type').value, url: r.querySelector('.link-url').value.trim() };
+      }).filter(function (l) { return l.url; });
+    }
+    function resetLinks() {
+      rows().forEach(function (r, i) { if (i > 0) r.remove(); });
+      var f = rows()[0]; if (f) { f.querySelector('.link-type').value = '블로그'; f.querySelector('.link-url').placeholder = HINT['블로그']; }
+      syncRows();
+    }
     function mark(ids) {
       form.querySelectorAll('.invalid').forEach(function (x) { x.classList.remove('invalid'); });
       ids.forEach(function (id) {
@@ -138,7 +187,7 @@
         email: val('inqEmail'),
         business: val('inqBiz'),
         services: Array.prototype.slice.call(form.querySelectorAll('input[name="svc"]:checked')).map(function (i) { return i.value; }),
-        link: val('inqLink'),
+        links: collectLinks(),
         message: val('inqMsg'),
         agree: document.getElementById('inqAgree').checked,
         website: val('inqWebsite'),
@@ -152,6 +201,7 @@
       if (!data.agree) { mark(['inqAgree']); return say('개인정보 수집·이용에 동의해 주셔야 문의를 남길 수 있어요.', true); }
       mark([]);
       delete data.website;
+      data.link = data.links.map(function (l) { return l.type + ': ' + l.url; }).join('\n');
       data.status = 'new';
       data.memo = '';
       data.createdAt = new Date().toISOString();
@@ -160,6 +210,7 @@
       say('문의를 보내는 중이에요…');
       saveInquiry(data).then(function () {
         form.reset();
+        resetLinks();
         say('');
         form.hidden = true;
         done.hidden = false;

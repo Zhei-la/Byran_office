@@ -21,11 +21,23 @@ const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toSt
 const COOKIE = 'byran_admin';
 const SESSION_HOURS = 12;
 
-const SERVICES = ['무료 계정 진단', '블로그 대행', '스레드 대행', '홈페이지형 블로그 제작', '홈페이지 제작'];
+const SERVICES = ['무료 채널 진단', '블로그 운영 대행', '스레드 운영 대행', '홈페이지형 블로그 제작', '홈페이지 제작'];
 const STATUSES = ['new', 'contacted', 'done', 'spam'];
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const PHONE_RE = /^[0-9+\-\s().]{8,20}$/;
 const clip = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+const LINK_TYPES = ['블로그', '스레드', '홈페이지', '인스타그램', '기타'];
+// 주소 여러 개 → "블로그: 주소" 줄바꿈으로 묶어 저장 (최대 5개)
+function joinLinks(b) {
+  if (Array.isArray(b.links)) {
+    return b.links.slice(0, 5)
+      .map((l) => ({ type: LINK_TYPES.includes(l && l.type) ? l.type : '기타', url: clip(l && l.url, 300) }))
+      .filter((l) => l.url)
+      .map((l) => `${l.type}: ${l.url}`)
+      .join('\n');
+  }
+  return clip(b.link, 300);
+}
 
 /* ---------------- 저장소 ---------------- */
 function makeStore() {
@@ -50,7 +62,7 @@ function makeStore() {
           email      VARCHAR(255),
           business   VARCHAR(200),
           services   TEXT[] NOT NULL DEFAULT '{}',
-          link       VARCHAR(300),
+          link       TEXT,
           message    TEXT,
           status     VARCHAR(20) NOT NULL DEFAULT 'new',
           memo       TEXT,
@@ -58,6 +70,7 @@ function makeStore() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_inquiries_created ON inquiries (created_at DESC)`);
+        await pool.query(`ALTER TABLE inquiries ALTER COLUMN link TYPE TEXT`); // 주소 여러 개 저장
       },
       async recentCount(ip) {
         const { rows } = await pool.query(
@@ -179,7 +192,7 @@ app.post('/api/inquiry', express.json({ limit: '20kb' }), async (req, res) => {
 
   const d = {
     name: clip(b.name, 100), phone: clip(b.phone, 40), email: clip(b.email, 255),
-    business: clip(b.business, 200), link: clip(b.link, 300), message: clip(b.message, 3000),
+    business: clip(b.business, 200), link: joinLinks(b), message: clip(b.message, 3000),
     services: (Array.isArray(b.services) ? b.services : []).map(String).filter((s) => SERVICES.includes(s)),
     ip: req.ip,
   };

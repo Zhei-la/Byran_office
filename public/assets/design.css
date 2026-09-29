@@ -144,3 +144,31 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .price-val .from{font-family:var(--sans);font-size:.62em;font-weight:500;color:var(--muted);margin-left:3px}
 .price-more{display:flex;justify-content:center;margin-top:28px}
 .price-simple h3 small{letter-spacing:.02em;font-size:12.5px}
+/* 포트폴리오: 실제 자료만 */
+.pf-grid.single{grid-template-columns:minmax(0,560px)}
+.pf-grid.pf-grid-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1040px){.pf-grid.pf-grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.pf-grid.pf-grid-4,.pf-grid.single{grid-template-columns:1fr}}
+.pf-site img{object-position:left center}
+/* 메인 작업 사례 바로가기 */
+.pf-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+@media(max-width:1040px){.pf-links{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.pf-links{grid-template-columns:1fr}}
+.pf-link{position:relative;display:grid;gap:6px;padding:22px 56px 22px 22px;border:1px solid var(--line);border-radius:3px;background:var(--paper);text-decoration:none;color:inherit;transition:background .2s,border-color .2s}
+.pf-link:hover{background:var(--cream);border-color:#d6cfbf}
+.pf-link b{font-size:18px;font-weight:600}
+.pf-sub{font-size:14px;color:var(--muted)}
+.pf-link .circ{position:absolute;right:18px;top:50%;transform:translateY(-50%)}
+/* 문의: 주소 여러 개 */
+.lbl-sub{font-weight:400;font-size:13px;color:var(--muted);margin-left:6px}
+.links{display:grid;gap:8px}
+.link-row{display:grid;grid-template-columns:130px 1fr auto;gap:8px;align-items:center}
+.link-row select{font:inherit;font-size:15px;padding:12px 10px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--text)}
+.link-row select:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 3px rgba(148,100,58,.15)}
+.link-del{width:40px;height:44px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--muted);font-size:20px;line-height:1;cursor:pointer}
+.link-del:hover{color:#9a3b25;border-color:#d9b7ad}
+.link-row .link-del[hidden]{display:none!important}
+.link-row:has(.link-del[hidden]){grid-template-columns:130px 1fr}
+.link-add{justify-self:start;margin-top:4px}
+@media(max-width:480px){.lbl-sub{display:block;margin:2px 0 0}.link-row{grid-template-columns:1fr auto;grid-template-areas:'type del' 'url url';padding:10px;border:1px solid var(--line);border-radius:3px;background:var(--cream)}.link-row:has(.link-del[hidden]){grid-template-columns:1fr;padding:0;border:0;background:none}.link-type{grid-area:type}.link-del{grid-area:del}.link-url{grid-area:url}}
+.adm-link .sel{white-space:pre-line}
