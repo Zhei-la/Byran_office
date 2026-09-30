@@ -28,6 +28,47 @@
 <p class="lead">문의를 남겨주시면 내용을 확인하고 남겨주신 연락처로 직접 연락드려요.</p></div>
 </div></section>
 
+<section class="sec quote-sec" id="quote"><div class="wrap">
+<div class="sec-head quote-head"><div><p class="eyebrow">01 · Build your plan</p><h2 class="h-lg">필요한 서비스만<br>골라보세요.</h2></div>
+<p class="lead">선택할 때마다 오른쪽 예상 비용이 바로 달라져요. 고른 구성은 아래 문의에 그대로 담겨요.</p></div>
+<div class="quote">
+<div class="q-opts" id="qOpts">
+<p class="q-group">운영 대행</p>
+<div class="q-card" data-q="blog">
+<label class="q-main"><input type="checkbox" name="svc" id="svc-blog" value="블로그 운영 대행"><span class="q-box" aria-hidden="true"></span><span class="q-name">블로그 운영 대행<small>키워드 기획부터 글·이미지 발행까지</small></span><span class="q-price">월 24만 원~</span></label>
+<div class="q-more">
+<div class="q-row"><span class="q-lbl">플랜</span><div class="seg" role="group" aria-label="블로그 플랜"><button type="button" data-plan="basic" aria-pressed="true">월 12회 · 24만</button><button type="button" data-plan="standard" aria-pressed="false">월 20회 · 34만</button></div></div>
+<div class="q-row"><span class="q-lbl">운영 기간</span><div class="q-step"><button type="button" data-step="-1" aria-label="한 달 줄이기">−</button><output aria-live="polite">1개월</output><button type="button" data-step="1" aria-label="한 달 늘리기">+</button></div></div>
+</div></div>
+<div class="q-card" data-q="threads">
+<label class="q-main"><input type="checkbox" name="svc" id="svc-threads" value="스레드 운영 대행"><span class="q-box" aria-hidden="true"></span><span class="q-name">스레드 운영 대행<small>월 20회 이상 발행 · 계정 방향·프로필 정리</small></span><span class="q-price">35만 원~</span></label>
+<div class="q-more">
+<div class="q-row"><span class="q-lbl">운영 기간</span><div class="seg" role="group" aria-label="스레드 운영 기간"><button type="button" data-plan="1m" aria-pressed="true">1개월 · 35만</button><button type="button" data-plan="2m" aria-pressed="false">2개월 · 50만</button></div></div>
+</div></div>
+<p class="q-group">제작</p>
+<div class="q-card" data-q="bloghome">
+<label class="q-main"><input type="checkbox" name="svc" id="svc-bloghome" value="홈페이지형 블로그 제작"><span class="q-box" aria-hidden="true"></span><span class="q-name">홈페이지형 블로그 제작<small>PC 대문 · 메뉴 카드 · 상담 버튼 · 완성 후 수정 3회</small></span><span class="q-price">10만 원</span></label>
+</div>
+<div class="q-card" data-q="website">
+<label class="q-main"><input type="checkbox" name="svc" id="svc-website" value="홈페이지 제작"><span class="q-box" aria-hidden="true"></span><span class="q-name">홈페이지 제작<small>소개·서비스·문의 구성 반응형 홈페이지 · 완성 후 수정 3회</small></span><span class="q-price">10만 원</span></label>
+</div>
+<p class="q-group">무료</p>
+<div class="q-card" data-q="diag">
+<label class="q-main"><input type="checkbox" name="svc" id="svc-diag" value="무료 채널 진단"><span class="q-box" aria-hidden="true"></span><span class="q-name">무료 채널 진단<small>블로그·스레드·홈페이지 운영 상태와 개선할 점</small></span><span class="q-price free">0원</span></label>
+</div>
+</div>
+<aside class="q-panel" id="qPanel" aria-label="현재 예상 비용">
+<p class="q-cap">현재 예상 비용</p>
+<ul class="q-lines" id="qLines"></ul>
+<p class="q-empty" id="qEmpty">왼쪽에서 서비스를 선택해 보세요</p>
+<div class="q-total"><span>예상 비용</span><b id="qTotal">0원</b><small>정확한 범위와 일정은 상담 후 확정돼요</small></div>
+<a class="btn btn-peach btn-block q-go" href="#inquiry">이 구성으로 상담 요청 <span class="arr" aria-hidden="true">→</span></a>
+</aside>
+</div>
+</div>
+<div class="q-bar" id="qBar" hidden><div><span>예상 비용</span><b id="qBarTotal">0원</b></div><a class="btn btn-peach btn-sm q-go" href="#inquiry">상담 요청 <span class="arr" aria-hidden="true">→</span></a></div>
+</section>
+
 <section class="sec"><div class="wrap contact-in">
 <div>
 <div class="kakao-card"><p class="eyebrow">How it works</p><h2>문의는 이렇게 진행돼요</h2>
@@ -46,7 +87,7 @@
 </div></div>
 </div>
 
-<div class="form-card" id="inquiry"><header><h2>문의 남기기</h2><p>연락처와 이메일 중 하나는 꼭 적어주세요. <span class="req">*</span> 표시는 필수 항목이에요.</p></header>
+<div class="form-card" id="inquiry"><header><p class="eyebrow">02 · Contact</p><h2>문의 남기기</h2><p>연락처와 이메일 중 하나는 꼭 적어주세요. <span class="req">*</span> 표시는 필수 항목이에요.</p></header>
 <form class="form" id="inqForm" novalidate>
 <div class="field"><label for="inqName">상호 / 성함 <span class="req">*</span></label><input id="inqName" name="name" type="text" autocomplete="name" maxlength="100" required placeholder="예: 바른필라테스 / 홍길동"></div>
 <div class="row2">
@@ -54,7 +95,7 @@
 <div class="field"><label for="inqEmail">이메일</label><input id="inqEmail" name="email" type="email" inputmode="email" autocomplete="email" maxlength="255" placeholder="예: hello@example.com"></div>
 </div>
 <div class="field"><label for="inqBiz">업종</label><input id="inqBiz" name="business" type="text" maxlength="200" placeholder="예: 필라테스, 스마트스토어 식품"></div>
-<div class="field"><span class="lbl" id="svcLbl">문의 서비스 (여러 개 선택 가능)</span><div class="opts" role="group" aria-labelledby="svcLbl"><label class="opt"><input type="checkbox" name="svc" id="svc-diag" value="무료 채널 진단"><span>무료 채널 진단</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-blog" value="블로그 운영 대행"><span>블로그 운영 대행</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-threads" value="스레드 운영 대행"><span>스레드 운영 대행</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-bloghome" value="홈페이지형 블로그 제작"><span>홈페이지형 블로그 제작</span></label><label class="opt"><input type="checkbox" name="svc" id="svc-website" value="홈페이지 제작"><span>홈페이지 제작</span></label></div></div>
+<div class="field"><span class="lbl">선택한 구성</span><div class="q-summary" id="qSummary"><p class="q-sum-empty">선택한 서비스가 없어요. 일반 문의로 접수돼요.</p><a class="q-edit" href="#quote">구성 고르기</a></div></div>
 <div class="field"><span class="lbl" id="linkLbl">블로그·스레드·홈페이지 주소 <small class="lbl-sub">여러 개면 추가해 주세요</small></span><div class="links" id="inqLinks" role="group" aria-labelledby="linkLbl"><div class="link-row"><select class="link-type" id="inqLinkType" aria-label="어떤 채널인지 선택"><option value="블로그">블로그</option><option value="스레드">스레드</option><option value="홈페이지">홈페이지</option><option value="인스타그램">인스타그램</option><option value="기타">기타</option></select><input class="link-url" id="inqLink" type="text" inputmode="url" maxlength="300" aria-label="주소" placeholder="예: blog.naver.com/아이디"><button type="button" class="link-del" aria-label="이 주소 지우기" hidden>×</button></div></div><button type="button" class="btn btn-outline btn-sm link-add" id="inqAddLink">+ 주소 추가</button></div>
 <div class="field"><label for="inqMsg">문의 내용</label><textarea id="inqMsg" name="message" maxlength="3000" placeholder="예: 블로그를 3개월째 못 올리고 있어요. 월 12회 플랜이 궁금해요."></textarea></div>
 <div class="hp" aria-hidden="true"><label for="inqWebsite">이 칸은 비워두세요</label><input id="inqWebsite" name="website" type="text" tabindex="-1" autocomplete="off"></div>

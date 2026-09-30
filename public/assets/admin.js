@@ -70,6 +70,7 @@
       (q.services || []).forEach(function (s) { meta.appendChild(el('span', 'chip svc-chip', s)); });
       if (meta.childNodes.length) what.appendChild(meta);
       if (q.link) { var l = el('p', 'adm-link'); l.appendChild(el('b', null, '주소')); l.appendChild(el('span', 'sel', q.link)); what.appendChild(l); }
+      if (q.estimate) { var es = el('div', 'adm-est'); es.appendChild(el('b', null, '선택한 구성')); es.appendChild(el('p', 'adm-body', q.estimate)); what.appendChild(es); }
       what.appendChild(el('p', 'adm-body', q.message || '문의 내용 없음'));
 
       var memoWrap = el('div', 'adm-memo');

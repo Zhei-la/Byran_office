@@ -101,6 +101,94 @@
     var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     var PHONE_RE = /^[0-9+\-\s().]{8,20}$/;
 
+
+    /* ---------- 구성 선택 + 예상 비용 (문의하기 상단) ---------- */
+    var quote = (function () {
+      var opts = document.getElementById('qOpts');
+      if (!opts) return null;
+      var PRICE = { blog: { basic: 24, standard: 34 }, threads: { '1m': 35, '2m': 50 }, bloghome: 10, website: 10, diag: 0 };
+      var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m' };
+      var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
+      var totalEl = document.getElementById('qTotal'), barTotal = document.getElementById('qBarTotal');
+      var summary = document.getElementById('qSummary');
+      function won(n) { return n > 0 ? n.toLocaleString('ko-KR') + '만 원' : '0원'; }
+      function card(k) { return opts.querySelector('[data-q="' + k + '"]'); }
+      function on(k) { var c = card(k); return !!(c && c.querySelector('input').checked); }
+      function items() {
+        var list = [];
+        if (on('blog')) {
+          var m = PRICE.blog[state.blogPlan];
+          list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월', price: m * state.blogMonths });
+        }
+        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: state.threadsPlan === '1m' ? '1개월' : '2개월', price: PRICE.threads[state.threadsPlan] });
+        if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: '1회 제작 · 완성 후 수정 3회', price: 10 });
+        if (on('website')) list.push({ name: '홈페이지 제작', detail: '1회 제작 · 완성 후 수정 3회', price: 10 });
+        if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
+        return list;
+      }
+      function li(it) {
+        var e = document.createElement('li');
+        var a = document.createElement('span'); a.className = 'q-l-name'; a.textContent = it.name;
+        var d = document.createElement('small'); d.textContent = it.detail; a.appendChild(d);
+        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.price ? won(it.price) : '무료';
+        e.appendChild(a); e.appendChild(b); return e;
+      }
+      function render() {
+        var list = items(), total = list.reduce(function (t, x) { return t + x.price; }, 0);
+        opts.querySelectorAll('.q-card').forEach(function (c) { c.classList.toggle('on', c.querySelector('input').checked); });
+        linesEl.textContent = ''; list.forEach(function (it) { linesEl.appendChild(li(it)); });
+        emptyEl.hidden = list.length > 0;
+        totalEl.textContent = won(total); if (barTotal) barTotal.textContent = won(total);
+        var sb = card('blog'); if (sb) sb.querySelector('output').textContent = state.blogMonths + '개월';
+        if (summary) {
+          summary.textContent = '';
+          if (!list.length) {
+            var p = document.createElement('p'); p.className = 'q-sum-empty'; p.textContent = '선택한 서비스가 없어요. 일반 문의로 접수돼요.'; summary.appendChild(p);
+          } else {
+            var ul = document.createElement('ul'); list.forEach(function (it) { ul.appendChild(li(it)); }); summary.appendChild(ul);
+            var t = document.createElement('p'); t.className = 'q-sum-total'; t.innerHTML = '<span>예상 비용</span><b></b>'; t.querySelector('b').textContent = won(total); summary.appendChild(t);
+          }
+          var ed = document.createElement('a'); ed.className = 'q-edit'; ed.href = '#quote'; ed.textContent = list.length ? '구성 바꾸기' : '구성 고르기'; summary.appendChild(ed);
+        }
+        return { list: list, total: total };
+      }
+      opts.addEventListener('change', render);
+      opts.addEventListener('click', function (e) {
+        var b = e.target.closest('button'); if (!b) return;
+        var c = b.closest('.q-card'), k = c.getAttribute('data-q');
+        if (b.hasAttribute('data-plan')) {
+          b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          if (k === 'blog') state.blogPlan = b.getAttribute('data-plan'); else state.threadsPlan = b.getAttribute('data-plan');
+        } else if (b.hasAttribute('data-step')) {
+          state.blogMonths = Math.min(12, Math.max(1, state.blogMonths + parseInt(b.getAttribute('data-step'), 10)));
+        }
+        render();
+      });
+      // 휴대폰: 서비스 고르는 동안 아래에 합계 막대 표시
+      var bar = document.getElementById('qBar'), panel = document.getElementById('qPanel');
+      if (bar && 'IntersectionObserver' in window) {
+        var seeOpts = false, seePanel = false;
+        var upd = function () { bar.hidden = !(seeOpts && !seePanel && window.innerWidth <= 900); };
+        new IntersectionObserver(function (en) { seeOpts = en[0].isIntersecting; upd(); }).observe(opts);
+        new IntersectionObserver(function (en) { seePanel = en[0].isIntersecting; upd(); }).observe(panel);
+        window.addEventListener('resize', upd);
+      }
+      render();
+      return {
+        render: render,
+        text: function () {
+          var r = render(); if (!r.list.length) return '';
+          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total);
+        },
+        reset: function () {
+          opts.querySelectorAll('input[name="svc"]').forEach(function (i) { i.checked = false; });
+          state.blogPlan = 'basic'; state.blogMonths = 1; state.threadsPlan = '1m';
+          opts.querySelectorAll('.seg').forEach(function (g) { g.querySelectorAll('button').forEach(function (x, i) { x.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); }); });
+          render();
+        }
+      };
+    })();
+
     var map = { diagnosis: 'svc-diag', blog: 'svc-blog', threads: 'svc-threads', bloghome: 'svc-bloghome', website: 'svc-website' };
     // 주소 끝(#blog 등)에 맞춰 문의 서비스를 미리 선택하고, 서비스 문의면 작성 칸으로 이동
     function applyHash(scroll) {
@@ -108,8 +196,9 @@
       var el = map[hash] && document.getElementById(map[hash]);
       if (!el) return;
       el.checked = true;
+      if (quote) quote.render();
       if (scroll && hash !== 'diagnosis') {
-        var card = form.closest('.form-card') || form;
+        var card = document.getElementById('quote') || form.closest('.form-card') || form;
         var go = function () { card.scrollIntoView({ block: 'start' }); };
         if (document.readyState === 'complete') go();
         else window.addEventListener('load', function () { setTimeout(go, 0); }, { once: true });
@@ -186,9 +275,10 @@
         phone: val('inqPhone'),
         email: val('inqEmail'),
         business: val('inqBiz'),
-        services: Array.prototype.slice.call(form.querySelectorAll('input[name="svc"]:checked')).map(function (i) { return i.value; }),
+        services: Array.prototype.slice.call(document.querySelectorAll('input[name="svc"]:checked')).map(function (i) { return i.value; }),
         links: collectLinks(),
         message: val('inqMsg'),
+        estimate: quote ? quote.text() : '',
         agree: document.getElementById('inqAgree').checked,
         website: val('inqWebsite'),
         source: 'marketing'
@@ -211,6 +301,7 @@
       saveInquiry(data).then(function () {
         form.reset();
         resetLinks();
+        if (quote) quote.reset();
         say('');
         form.hidden = true;
         done.hidden = false;

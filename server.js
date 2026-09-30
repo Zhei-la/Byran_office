@@ -49,7 +49,7 @@ function makeStore() {
     });
     const row = (r) => r && ({
       id: String(r.id), name: r.name, phone: r.phone, email: r.email, business: r.business,
-      services: r.services || [], link: r.link, message: r.message, status: r.status,
+      services: r.services || [], link: r.link, message: r.message, estimate: r.estimate || '', status: r.status,
       memo: r.memo || '', createdAt: r.created_at.toISOString(),
     });
     return {
@@ -71,6 +71,7 @@ function makeStore() {
         )`);
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_inquiries_created ON inquiries (created_at DESC)`);
         await pool.query(`ALTER TABLE inquiries ALTER COLUMN link TYPE TEXT`); // 주소 여러 개 저장
+        await pool.query(`ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS estimate TEXT`); // 문의하기에서 고른 구성·예상 비용
       },
       async recentCount(ip) {
         const { rows } = await pool.query(
@@ -79,9 +80,9 @@ function makeStore() {
       },
       async add(d) {
         await pool.query(
-          `INSERT INTO inquiries (name, phone, email, business, services, link, message, ip)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-          [d.name, d.phone || null, d.email || null, d.business || null, d.services, d.link || null, d.message || null, d.ip]);
+          `INSERT INTO inquiries (name, phone, email, business, services, link, message, estimate, ip)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+          [d.name, d.phone || null, d.email || null, d.business || null, d.services, d.link || null, d.message || null, d.estimate || null, d.ip]);
       },
       async list() {
         const { rows } = await pool.query(`SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 500`);
@@ -192,7 +193,7 @@ app.post('/api/inquiry', express.json({ limit: '20kb' }), async (req, res) => {
 
   const d = {
     name: clip(b.name, 100), phone: clip(b.phone, 40), email: clip(b.email, 255),
-    business: clip(b.business, 200), link: joinLinks(b), message: clip(b.message, 3000),
+    business: clip(b.business, 200), link: joinLinks(b), message: clip(b.message, 3000), estimate: clip(b.estimate, 1000),
     services: (Array.isArray(b.services) ? b.services : []).map(String).filter((s) => SERVICES.includes(s)),
     ip: req.ip,
   };
