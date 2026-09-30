@@ -252,3 +252,8 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
   .phero-photo::after{background:linear-gradient(90deg,#181b18e0,#181b1870),linear-gradient(0deg,#181b18,transparent 45%)}
   .phero-photo .phero-in{min-height:0}
 }
+/* 홈페이지 제작 사례 썸네일 */
+.pf-web img{object-position:center top}
+.pf-grid.pf-grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:640px){.pf-grid.pf-grid-2{grid-template-columns:1fr}}
+.pf-note a{color:var(--bronze);text-underline-offset:3px}
