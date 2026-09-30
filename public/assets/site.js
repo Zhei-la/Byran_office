@@ -59,8 +59,30 @@
         tabs.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
         var f = b.dataset.filter;
         document.querySelectorAll('[data-cat]').forEach(function (c) {
-          c.hidden = !(f === 'all' || c.dataset.cat === f);
+          c.hidden = c.dataset.cat !== f;
         });
+        if (history.replaceState) history.replaceState(null, '', '#' + f);
+      });
+    });
+  }
+
+  // 통계 사진 크게 보기
+  var zooms = document.querySelectorAll('[data-zoom]');
+  if (zooms.length && typeof HTMLDialogElement === 'function') {
+    var lb = document.createElement('dialog'); lb.className = 'lb';
+    lb.innerHTML = '<button type="button" class="lb-x" aria-label="닫기">×</button><img alt=""><p class="lb-cap"></p>';
+    document.body.appendChild(lb);
+    var lbImg = lb.querySelector('img'), lbCap = lb.querySelector('.lb-cap');
+    lb.querySelector('.lb-x').addEventListener('click', function () { lb.close(); });
+    lb.addEventListener('click', function (e) { if (e.target === lb) lb.close(); });
+    zooms.forEach(function (a) {
+      a.addEventListener('click', function (e) {
+        e.preventDefault();
+        var im = a.querySelector('img');
+        lbImg.src = a.getAttribute('href'); lbImg.alt = im ? im.alt : '';
+        var card = a.closest('.pf-card'), h = card && card.querySelector('h3');
+        lbCap.textContent = h ? h.textContent : '';
+        lb.showModal();
       });
     });
   }
