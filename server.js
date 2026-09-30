@@ -248,14 +248,34 @@ app.delete('/api/admin/inquiries/:id', requireAdmin, async (req, res) => {
   catch (e) { console.error('[admin delete]', e.message); res.status(500).json({ ok: false, error: '삭제하지 못했어요.' }); }
 });
 
-/* 페이지 */
-app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+/* 페이지
+   HTML 을 보낼 때 css/js 주소 뒤에 배포 버전(?v=…)을 붙인다.
+   → 새로 배포하면 휴대폰 브라우저에 남아 있던 예전 디자인 파일 대신 새 파일을 받아간다. */
+const PUBLIC = path.join(__dirname, 'public');
+const ASSET_VER = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).slice(0, 8);
+const htmlCache = new Map();
+function sendPage(res, file, status = 200) {
+  let html = htmlCache.get(file);
+  if (html === undefined) {
+    html = fs.readFileSync(file, 'utf8').replace(/((?:href|src)="assets\/[^"?#]+\.(?:css|js))"/g, `$1?v=${ASSET_VER}"`);
+    if (PROD) htmlCache.set(file, html);
+  }
+  res.status(status).set('Cache-Control', 'no-cache').type('html').send(html);
+}
+app.get('*', (req, res, next) => {
+  const clean = decodeURIComponent(req.path).replace(/\/+$/, '') || '/index';
+  if (clean.includes('..')) return next();
+  const name = clean === '/admin' ? '/admin' : clean;
+  const file = path.join(PUBLIC, name.endsWith('.html') ? name : name + '.html');
+  if (!file.startsWith(PUBLIC + path.sep)) return next();
+  fs.stat(file, (err, st) => (err || !st.isFile() ? next() : sendPage(res, file)));
+});
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   maxAge: PROD ? '1h' : 0,
   setHeaders(res, file) { if (file.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache'); },
 }));
-app.use((req, res) => res.status(404).sendFile(path.join(__dirname, 'public', 'index.html')));
+app.use((req, res) => sendPage(res, path.join(PUBLIC, 'index.html'), 404));
 
 store.init()
   .then(() => app.listen(PORT, () => console.log(`byranmk listening on ${PORT} (store: ${store.kind})`)))
