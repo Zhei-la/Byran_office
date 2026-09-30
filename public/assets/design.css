@@ -312,3 +312,24 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .lb img{display:block;width:100%;height:auto;max-height:82vh;object-fit:contain;border-radius:4px;background:#fff}
 .lb-cap{color:#f5f3e9;font-size:14px;text-align:center;margin-top:10px}
 .lb-x{position:absolute;top:-44px;right:0;width:38px;height:38px;border:0;border-radius:50%;background:#fff;color:#181b18;font-size:24px;cursor:pointer}
+/* 서비스 페이지 포트폴리오: 기본 4개 + 더 보러가기 */
+.pf-grid.pf-4up{grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.pf-grid.pf-4up.single{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr)}
+.pf-4up .pf-meta{padding:16px 18px}
+.pf-4up .pf-meta h3{font-size:15px;line-height:1.45}
+.pf-4up .pf-desc{font-size:12.5px}
+.pf-note{margin-top:18px}
+.pf-more{margin-top:22px;display:flex;justify-content:center}
+.pf-more .btn{min-width:280px}
+@media(max-width:1080px){.pf-grid.pf-4up,.pf-grid.pf-4up.single{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){
+  .pf-grid.pf-4up,.pf-grid.pf-4up.single{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .pf-4up .pf-meta{padding:12px 12px 14px}
+  .pf-4up .pf-meta h3{font-size:14px}
+  .pf-4up .pf-cat{font-size:11px}
+  .pf-4up .pf-desc{font-size:12px;line-height:1.55}
+  .pf-note{margin-top:14px;font-size:13px}
+  .pf-more{margin-top:16px}
+  .pf-more .btn{width:100%;min-width:0}
+  #portfolio .sec-head.split .text-link{display:none}
+}
