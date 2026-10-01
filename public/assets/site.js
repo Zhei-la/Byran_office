@@ -16,12 +16,14 @@
     var price = card.querySelector('[data-price]:not([data-period])');
     var unit = card.querySelector('[data-unit]:not([data-period])');
     var sub = card.querySelector('[data-sub]:not([data-period])');
+    var was = card.querySelector('[data-was]:not([data-period])');
     btns.forEach(function (b) {
       b.addEventListener('click', function () {
         btns.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
         if (price) price.textContent = b.dataset.price;
         if (unit) unit.textContent = b.dataset.unit;
         if (sub) sub.textContent = b.dataset.sub;
+        if (was && b.dataset.was) was.textContent = b.dataset.was;
       });
     });
   });
