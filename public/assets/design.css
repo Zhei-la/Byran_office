@@ -383,3 +383,11 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
   .st-table{font-size:13px}
 }
 @media(max-width:700px){.st-bar:nth-child(odd) .st-bar-d{visibility:hidden}}
+/* 정가 취소선 + 특가 표시 (홈페이지 제작 30만 → 10만) */
+.was{text-decoration:line-through;opacity:.55;font-weight:400;font-size:.62em;margin-right:6px;letter-spacing:0;vertical-align:.12em}
+.chip .was,.q-price .was,.svc-price .was{font-size:.9em;vertical-align:0}
+.plan-price{flex-wrap:wrap;align-items:baseline}
+.sale-tag{display:inline-block;margin-left:8px;padding:4px 9px;border-radius:999px;background:#c0392b;color:#fff;font-size:11.5px;font-weight:600;letter-spacing:0;vertical-align:middle}
+.plan-price .was{font-size:18px;vertical-align:0;margin-right:8px}
+.price-val .was{font-size:.6em;margin-right:8px}
+@media(max-width:700px){.plan-price .was{font-size:16px}}
