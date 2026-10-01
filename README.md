@@ -29,3 +29,11 @@ ADMIN_PASSWORD=test SESSION_SECRET=dev npm start   # http://localhost:3000
 - 디자인: `public/assets/design.css` (기본 스타일은 `base.css`)
 - 동작: `public/assets/site.js`, 관리자 문의함 `public/assets/admin.js`
 - 사업자등록번호·통신판매업신고번호·주소: 각 페이지 하단 `<div class="biz">` (아직 미입력)
+
+## 방문 통계 (visits.js)
+- 기기(쿠키 `bv`) 1대 = 1명, 30분 넘게 쉬었다가 다시 오면 방문 +1, 화면(HTML)을 열 때마다 화면 연 횟수 +1
+- 봇(User-Agent)과 사람 확인 신호(`assets/hi.js` → `POST /v/hi`, 스크롤·터치·6초 머묾)가 없는 기기는 통계에서 뺌
+- 관리자로 로그인한 브라우저, 운영자 전용 주소(`/v/me/<키>`)를 연 브라우저는 통계에서 뺌
+- 관리자 화면 `/admin` → '방문 통계' 탭: 당일 / 최근 7일 / 전체, 플랫폼별, 최근 14일 그래프
+- 링크에 `?from=threads` 처럼 붙이면 플랫폼이 더 정확하게 잡힘
+- DATABASE_URL(PostgreSQL)이 있을 때만 동작

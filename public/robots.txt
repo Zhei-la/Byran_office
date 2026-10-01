@@ -2,5 +2,6 @@ User-agent: *
 Disallow: /admin
 Disallow: /admin.html
 Disallow: /api/
+Disallow: /v/
 
 Sitemap: https://byranmk.com/sitemap.xml

@@ -333,3 +333,53 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
   .pf-more .btn{width:100%;min-width:0}
   #portfolio .sec-head.split .text-link{display:none}
 }
+/* ---- 관리자: 방문 통계 ---- */
+.adm-views{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--cream);margin-bottom:26px}
+.adm-views button{border:0;background:none;padding:10px 20px;border-radius:999px;font:600 14px/1 var(--sans);color:var(--muted);cursor:pointer}
+.adm-views button[aria-pressed="true"]{background:var(--ink);color:#f5f3e9}
+.adm-views button[hidden]{display:none}
+.st-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.st-upd{font-size:12px;color:var(--muted)}
+.st-msg{padding:14px 16px;border-radius:3px;background:var(--cream);font-size:14px;margin-bottom:16px}
+.st-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.st-card{background:#fff;border:1px solid var(--line);border-radius:4px;padding:20px 20px 18px;display:grid;gap:8px;align-content:start}
+.st-lbl{font-size:13px;color:var(--muted)}
+.st-val-row{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px}
+.st-val{font-size:34px;font-weight:600;letter-spacing:-.04em;line-height:1.1}
+.st-delta{font-size:12.5px;font-weight:600}
+.st-delta.up{color:#2f7d47}.st-delta.down{color:#c0392b}.st-delta.same{color:var(--muted);font-weight:500}
+.st-sub{font-size:12.5px;color:var(--muted);line-height:1.55}
+.st-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:14px;margin-bottom:18px}
+.st-block{background:#fff;border:1px solid var(--line);border-radius:4px;padding:20px}
+.st-block h3{font-size:15px;font-weight:600;margin-bottom:12px}
+.st-block-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.st-block-head h3{margin:0}
+.st-table-wrap{overflow-x:auto}
+.st-table{width:100%;border-collapse:collapse;font-size:14px}
+.st-table th,.st-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.st-table th:first-child,.st-table td:first-child{text-align:left}
+.st-table thead th{font-size:12px;color:var(--muted);font-weight:500}
+.st-table tbody th{font-weight:500}
+.st-none{text-align:center!important;color:var(--muted);padding:22px 8px!important}
+#stDailyWrap{margin-top:16px;max-height:420px;overflow-y:auto}
+.st-bars{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:6px;align-items:end;height:190px}
+.st-bar{display:grid;grid-template-rows:auto 1fr auto;height:100%;align-items:end;text-align:center;gap:4px}
+.st-bar-n{font-size:11px;color:var(--ink);font-weight:600}
+.st-bar-f{display:block;width:100%;min-height:2px;background:var(--bronze);border-radius:3px 3px 0 0;align-self:end}
+.st-bar:last-child .st-bar-f{background:var(--ink)}
+.st-bar-d{font-size:10.5px;color:var(--muted)}
+.st-note{font-size:13px;color:var(--muted);line-height:1.8;margin-bottom:14px}
+.st-owner{border:1px solid var(--line);border-radius:4px;background:var(--cream);padding:14px 16px}
+.st-owner summary{cursor:pointer;font-weight:600;font-size:14px}
+.st-owner p{font-size:13px;line-height:1.7;margin-top:10px;color:var(--muted)}
+.st-owner-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.st-owner code{font-size:12.5px;background:#fff;border:1px solid var(--line);padding:8px 10px;border-radius:3px;word-break:break-all;flex:1 1 260px}
+.st-tip code{font-size:12px;background:#fff;padding:1px 5px;border-radius:3px}
+@media(max-width:1080px){.st-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.st-grid{grid-template-columns:1fr}}
+@media(max-width:700px){
+  .adm-views{display:flex;width:100%}.adm-views button{flex:1;padding:11px 8px}
+  .st-cards{gap:10px}.st-card{padding:14px}.st-val{font-size:26px}.st-lbl{font-size:12px}
+  .st-block{padding:14px}.st-bars{height:150px;gap:3px}.st-bar-n{font-size:9.5px}.st-bar-d{font-size:9px}
+  .st-table{font-size:13px}
+}
+@media(max-width:700px){.st-bar:nth-child(odd) .st-bar-d{visibility:hidden}}

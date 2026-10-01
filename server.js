@@ -13,6 +13,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
+const makeVisits = require('./visits');
 
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
@@ -54,6 +55,7 @@ function makeStore() {
     });
     return {
       kind: 'postgres',
+      query: (sql, params) => pool.query(sql, params),
       async init() {
         await pool.query(`CREATE TABLE IF NOT EXISTS inquiries (
           id         SERIAL PRIMARY KEY,
@@ -72,6 +74,7 @@ function makeStore() {
         await pool.query(`CREATE INDEX IF NOT EXISTS idx_inquiries_created ON inquiries (created_at DESC)`);
         await pool.query(`ALTER TABLE inquiries ALTER COLUMN link TYPE TEXT`); // 주소 여러 개 저장
         await pool.query(`ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS estimate TEXT`); // 문의하기에서 고른 구성·예상 비용
+        await pool.query(`ALTER TABLE inquiries ADD COLUMN IF NOT EXISTS vid VARCHAR(40)`); // 방문 기기 (어느 플랫폼에서 와서 문의했는지)
       },
       async recentCount(ip) {
         const { rows } = await pool.query(
@@ -80,9 +83,9 @@ function makeStore() {
       },
       async add(d) {
         await pool.query(
-          `INSERT INTO inquiries (name, phone, email, business, services, link, message, estimate, ip)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [d.name, d.phone || null, d.email || null, d.business || null, d.services, d.link || null, d.message || null, d.estimate || null, d.ip]);
+          `INSERT INTO inquiries (name, phone, email, business, services, link, message, estimate, ip, vid)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [d.name, d.phone || null, d.email || null, d.business || null, d.services, d.link || null, d.message || null, d.estimate || null, d.ip, d.vid || null]);
       },
       async list() {
         const { rows } = await pool.query(`SELECT * FROM inquiries ORDER BY created_at DESC LIMIT 500`);
@@ -185,6 +188,12 @@ app.use((req, res, next) => {
 
 app.get('/healthz', (req, res) => res.json({ ok: true, store: store.kind }));
 
+/* 방문자 세기 — 기기 1대 = 1명, 30분 쉬면 방문 +1, 봇·운영자 기기 제외 (visits.js) */
+const visits = makeVisits({ query: store.query, isOwner: isAdmin, secret: SESSION_SECRET, secure: PROD });
+app.post('/v/hi', visits.hi);                // 사람 확인 신호
+app.get('/v/me/:key', visits.markOwner);     // 운영자 기기 등록 주소
+app.use(visits.track);                       // 화면 연 기록
+
 /* 문의 접수 */
 app.post('/api/inquiry', express.json({ limit: '20kb' }), async (req, res) => {
   const b = req.body || {};
@@ -196,6 +205,7 @@ app.post('/api/inquiry', express.json({ limit: '20kb' }), async (req, res) => {
     business: clip(b.business, 200), link: joinLinks(b), message: clip(b.message, 3000), estimate: clip(b.estimate, 1000),
     services: (Array.isArray(b.services) ? b.services : []).map(String).filter((s) => SERVICES.includes(s)),
     ip: req.ip,
+    vid: visits.vidFromReq(req),
   };
   if (!d.name) return fail(400, '상호 또는 성함을 적어주세요.');
   if (!d.phone && !d.email) return fail(400, '연락받으실 전화번호나 이메일 중 하나는 적어주세요.');
@@ -223,6 +233,7 @@ app.post('/api/admin/login', express.json({ limit: '2kb' }), (req, res) => {
   }
   loginTries.delete(req.ip);
   setCookie(res, makeToken(), SESSION_HOURS * 3600);
+  visits.ownerFromReq(req); // 관리자로 로그인한 브라우저는 방문 통계에서 뺀다
   res.json({ ok: true });
 });
 app.post('/api/admin/logout', (req, res) => { setCookie(res, '', 0); res.json({ ok: true }); });
@@ -230,6 +241,13 @@ app.get('/api/admin/me', (req, res) => res.json({ ok: isAdmin(req) }));
 app.get('/api/admin/inquiries', requireAdmin, async (req, res) => {
   try { res.json({ ok: true, items: await store.list() }); }
   catch (e) { console.error('[admin list]', e.message); res.status(500).json({ ok: false, error: '목록을 불러오지 못했어요.' }); }
+});
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  try {
+    const out = await visits.stats(String(req.query.r || 'today'));
+    if (out.enabled) out.ownerUrl = `https://${req.get('host')}/v/me/${visits.ownerKey()}`;
+    res.json({ ok: true, ...out });
+  } catch (e) { console.error('[admin stats]', e.message); res.status(500).json({ ok: false, error: '방문 통계를 불러오지 못했어요.' }); }
 });
 app.patch('/api/admin/inquiries/:id', requireAdmin, express.json({ limit: '10kb' }), async (req, res) => {
   const patch = {};
@@ -278,5 +296,6 @@ app.use(express.static(path.join(__dirname, 'public'), {
 app.use((req, res) => sendPage(res, path.join(PUBLIC, 'index.html'), 404));
 
 store.init()
+  .then(() => visits.init())
   .then(() => app.listen(PORT, () => console.log(`byranmk listening on ${PORT} (store: ${store.kind})`)))
   .catch((e) => { console.error('데이터베이스 준비 실패:', e.message); process.exit(1); });

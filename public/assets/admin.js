@@ -195,5 +195,102 @@
     setInterval(function () { if (!app.hidden && document.visibilityState === 'visible') load().catch(function () {}); }, 60000);
   }
 
+
+  /* ---------- 방문 통계 (실제 서버에서만) ---------- */
+  var stView = 'inq', stRange = 'today', stTimer = null;
+  var views = document.querySelectorAll('#admViews [data-view]');
+  var inqBox = document.getElementById('admInq'), stBox = document.getElementById('admStats');
+  function fmt(n) { return (n || 0).toLocaleString('ko-KR'); }
+  function delta(cur, prev) {
+    if (prev == null) return null;
+    var d = (cur || 0) - (prev || 0);
+    var e = el('span', 'st-delta ' + (d > 0 ? 'up' : d < 0 ? 'down' : 'same'));
+    e.textContent = d > 0 ? '▲ ' + fmt(d) : d < 0 ? '▼ ' + fmt(-d) : '변화 없음';
+    return e;
+  }
+  function card(label, val, prevVal, sub) {
+    var c = el('div', 'st-card');
+    c.appendChild(el('p', 'st-lbl', label));
+    var row = el('div', 'st-val-row'); row.appendChild(el('b', 'st-val', fmt(val)));
+    var dl = delta(val, prevVal); if (dl) row.appendChild(dl);
+    c.appendChild(row);
+    if (sub) c.appendChild(el('p', 'st-sub', sub));
+    return c;
+  }
+  function renderStats(j) {
+    var msg = document.getElementById('stMsg');
+    if (!j.enabled) { msg.hidden = false; msg.textContent = '방문 통계는 데이터베이스가 연결된 실제 사이트에서만 보여요.'; return; }
+    msg.hidden = true;
+    var s = j.summary, p = s.prev || {};
+    var hasPrev = !!s.prev;
+    var cards = document.getElementById('stCards'); cards.textContent = '';
+    cards.appendChild(card('방문한 사람 (기기 기준)', s.people, hasPrev ? p.people : null));
+    cards.appendChild(card('총 방문 횟수', s.visits, hasPrev ? p.visits : null, '총 방문 인원 — 기기 기준 ' + fmt(s.people) + '명 · IP 기준 ' + fmt(s.ips) + '개'));
+    cards.appendChild(card('화면 연 횟수', s.views, hasPrev ? p.views : null));
+    var rate = s.people ? Math.round(s.inquiries / s.people * 1000) / 10 : 0;
+    cards.appendChild(card('문의', s.inquiries, hasPrev ? p.inquiries : null, '방문 → 문의 ' + rate + '%'));
+
+    var tb = document.querySelector('#stPlat tbody'); tb.textContent = '';
+    if (!j.platforms.length) { var tr0 = el('tr'); var td0 = el('td', 'st-none', '아직 기록이 없어요.'); td0.colSpan = 4; tr0.appendChild(td0); tb.appendChild(tr0); }
+    j.platforms.forEach(function (x) {
+      var tr = el('tr'); [x.label, fmt(x.people), fmt(x.visits), fmt(x.inquiries)].forEach(function (v, i) { tr.appendChild(el(i ? 'td' : 'th', null, v)); });
+      tb.appendChild(tr);
+    });
+
+    var days = j.daily.slice(0, 14).reverse();
+    var max = Math.max(1, Math.max.apply(null, days.map(function (d) { return d.people; })));
+    var bars = document.getElementById('stBars'); bars.textContent = '';
+    days.forEach(function (d) {
+      var b = el('div', 'st-bar');
+      b.appendChild(el('span', 'st-bar-n', fmt(d.people)));
+      var f = el('span', 'st-bar-f'); f.style.height = Math.round(d.people / max * 100) + '%'; b.appendChild(f);
+      b.appendChild(el('span', 'st-bar-d', d.day.slice(5).replace('-', '/')));
+      b.title = d.day + ' · 사람 ' + d.people + ' · 방문 ' + d.visits + ' · 화면 ' + d.views;
+      bars.appendChild(b);
+    });
+    var dt = document.querySelector('#stDaily tbody'); dt.textContent = '';
+    j.daily.forEach(function (d) {
+      var tr = el('tr'); [d.day.replace(/-/g, '.'), fmt(d.people), fmt(d.visits), fmt(d.views), fmt(d.inquiries)].forEach(function (v, i) { tr.appendChild(el(i ? 'td' : 'th', null, v)); });
+      dt.appendChild(tr);
+    });
+    if (j.ownerUrl) document.getElementById('stOwner').textContent = j.ownerUrl;
+    document.getElementById('stUpd').textContent = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 기준';
+  }
+  function loadStats() {
+    return api('GET', '/api/admin/stats?r=' + stRange).then(renderStats).catch(function (e) {
+      if (e && e.message === 'auth') return;
+      var msg = document.getElementById('stMsg'); msg.hidden = false; msg.textContent = '방문 통계를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+    });
+  }
+  function showView(v) {
+    stView = v;
+    views.forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-view') === v ? 'true' : 'false'); });
+    inqBox.hidden = v !== 'inq'; stBox.hidden = v !== 'stats';
+    if (v === 'stats') loadStats();
+  }
+  if (views.length && stBox) {
+    views.forEach(function (b) { b.addEventListener('click', function () { showView(b.getAttribute('data-view')); }); });
+    document.querySelectorAll('#stRange [data-r]').forEach(function (b, _, all) {
+      b.addEventListener('click', function () {
+        stRange = b.getAttribute('data-r');
+        all.forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+        loadStats();
+      });
+    });
+    var allBtn = document.getElementById('stAllBtn');
+    allBtn.addEventListener('click', function () {
+      var w = document.getElementById('stDailyWrap'); w.hidden = !w.hidden;
+      allBtn.setAttribute('aria-expanded', w.hidden ? 'false' : 'true');
+      allBtn.textContent = w.hidden ? '전체보기' : '접기';
+    });
+    document.getElementById('stOwnerCopy').addEventListener('click', function () {
+      var t = document.getElementById('stOwner').textContent, btn = this;
+      (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { btn.textContent = '길게 눌러 복사'; })
+        .then(function () { setTimeout(function () { btn.textContent = '주소 복사'; }, 1800); });
+    });
+    if (inClaude) { views[1].hidden = true; }
+    setInterval(function () { if (stView === 'stats' && !app.hidden && document.visibilityState === 'visible') loadStats(); }, 60000);
+  }
+
   if (inClaude) startClaude(); else startServer();
 })();
