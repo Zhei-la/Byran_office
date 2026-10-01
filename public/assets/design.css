@@ -391,3 +391,5 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .plan-price .was{font-size:18px;vertical-align:0;margin-right:8px}
 .price-val .was{font-size:.6em;margin-right:8px}
 @media(max-width:700px){.plan-price .was{font-size:16px}}
+/* 빨간 표시 글자가 안 보이던 문제 (.plan-price span 색이 덮어씀) */
+.plan-price .sale-tag,.plan.hl .plan-price .sale-tag{color:#fff;font-size:12.5px;font-weight:700;background:#c0392b;padding:5px 11px;letter-spacing:-.01em}
