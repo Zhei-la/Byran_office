@@ -23,7 +23,7 @@
         if (price) price.textContent = b.dataset.price;
         if (unit) unit.textContent = b.dataset.unit;
         if (sub) sub.textContent = b.dataset.sub;
-        if (was && b.dataset.was) was.textContent = b.dataset.was;
+        if (was) { was.textContent = b.dataset.was || ''; was.hidden = !b.dataset.was; }
       });
     });
   });
@@ -130,8 +130,8 @@
     var quote = (function () {
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
-      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m': 35, '2m': 50 }, bloghome: 10, website: 15, diag: 0 };
-      var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m' };
+      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '20': { '1m': 15, '2m': 26 }, '50': { '1m': 22, '2m': 40 } }, bloghome: 10, website: 15, diag: 0 };
+      var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m', threadsCount: '20' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
       var totalEl = document.getElementById('qTotal'), barTotal = document.getElementById('qBarTotal');
       var summary = document.getElementById('qSummary');
@@ -144,7 +144,7 @@
           var m = PRICE.blog[state.blogPlan];
           list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월', price: m * state.blogMonths });
         }
-        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: state.threadsPlan === '1m' ? '1개월' : '2개월', price: PRICE.threads[state.threadsPlan] });
+        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: '월 ' + state.threadsCount + '회 이상 · ' + (state.threadsPlan === '1m' ? '1개월' : '2개월'), price: PRICE.threads[state.threadsCount][state.threadsPlan] });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.website });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
@@ -183,6 +183,9 @@
         if (b.hasAttribute('data-plan')) {
           b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
           if (k === 'blog') state.blogPlan = b.getAttribute('data-plan'); else state.threadsPlan = b.getAttribute('data-plan');
+        } else if (b.hasAttribute('data-count')) {
+          b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          state.threadsCount = b.getAttribute('data-count');
         } else if (b.hasAttribute('data-step')) {
           state.blogMonths = Math.min(12, Math.max(1, state.blogMonths + parseInt(b.getAttribute('data-step'), 10)));
         }
@@ -206,7 +209,7 @@
         },
         reset: function () {
           opts.querySelectorAll('input[name="svc"]').forEach(function (i) { i.checked = false; });
-          state.blogPlan = 'basic'; state.blogMonths = 1; state.threadsPlan = '1m';
+          state.blogPlan = 'basic'; state.blogMonths = 1; state.threadsPlan = '1m'; state.threadsCount = '20';
           opts.querySelectorAll('.seg').forEach(function (g) { g.querySelectorAll('button').forEach(function (x, i) { x.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); }); });
           render();
         }
