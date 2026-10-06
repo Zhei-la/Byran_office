@@ -10,7 +10,7 @@ const DAY = `(now() AT TIME ZONE 'Asia/Seoul')::date`;
 const VCOOKIE = 'bv';
 const VID_RE = /^[a-f0-9]{16,40}$/;
 // 안 세는 주소 (관리·API·방문 신호·파일)
-const SKIP_PATH = /^\/(admin|api\/|v\/|healthz|favicon|manifest|robots|sitemap|assets\/)|\.(?!html$)[a-z0-9]{2,5}$/i;
+const SKIP_PATH = /^\/(admin|api\/|v\/|healthz|favicon|manifest|robots|sitemap|assets\/|media\/)|\.(?!html$)[a-z0-9]{2,5}$/i;
 // 봇: 이름을 밝히는 것 + 브라우저인 척하는 흔한 가짜
 const BOT = /bot|crawl|spider|slurp|preview|scrap|facebookexternalhit|kakaotalk-scrap|daumoa|yeti|curl|wget|python|go-http|java\/|headless|lighthouse|monitor|uptime|axios|node-fetch|checker|scanner|leads|httpclient|okhttp|libwww|compatible;|iPhone OS 13_2_3|Chrome\/[1-9]\d\.|Firefox\/[1-8]\d\.|PhantomJS|Puppeteer|Playwright|Selenium/i;
 

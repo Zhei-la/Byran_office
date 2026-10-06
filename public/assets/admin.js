@@ -1,4 +1,4 @@
-/* 바이란 마케팅 — 문의함 (관리자)
+/* 바이란 마케팅 — 관리자 (문의함 · 방문 통계 · 포트폴리오 글쓰기)
    실제 홈페이지(byranmk.com): 서버 API + 비밀번호 로그인
    Claude 미리보기: 미리보기 저장소(db) */
 (function () {
@@ -266,7 +266,9 @@
     stView = v;
     views.forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-view') === v ? 'true' : 'false'); });
     inqBox.hidden = v !== 'inq'; stBox.hidden = v !== 'stats';
+    if (pfBox) pfBox.hidden = v !== 'pf';
     if (v === 'stats') loadStats();
+    if (v === 'pf' && !pfLoaded) { pfLoaded = true; pfList(); }
   }
   if (views.length && stBox) {
     views.forEach(function (b) { b.addEventListener('click', function () { showView(b.getAttribute('data-view')); }); });
@@ -288,9 +290,252 @@
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { btn.textContent = '길게 눌러 복사'; })
         .then(function () { setTimeout(function () { btn.textContent = '주소 복사'; }, 1800); });
     });
-    if (inClaude) { views[1].hidden = true; }
+    if (inClaude) { views[1].hidden = true; if (views[2]) views[2].hidden = true; }
     setInterval(function () { if (stView === 'stats' && !app.hidden && document.visibilityState === 'visible') loadStats(); }, 60000);
   }
+
+  /* ---------- 포트폴리오 사례 글쓰기 (실제 서버에서만) ----------
+     글 = 서비스 · 제목 · 핵심 결과 · 한 줄 설명 · 업종 · 기간 · 계정 주소 + 본문(사진·설명 글을 원하는 순서로)
+     첫 번째 사진이 목록 카드 사진이 된다. 사진은 올리기 전에 휴대폰·PC에서 줄여서(긴 쪽 최대 2600px) 보낸다. */
+  var pfBox = document.getElementById('admPf');
+  var pfLoaded = false, pfItems = [];
+  var PF_CATS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['bloghome', '홈페이지형 블로그'], ['website', '홈페이지 제작']];
+  function pfCat(k) { for (var i = 0; i < PF_CATS.length; i++) if (PF_CATS[i][0] === k) return PF_CATS[i][1]; return k; }
+  function pfCover(p) { var b = (p.blocks || []).filter(function (x) { return x.type === 'img' && x.img; })[0]; return b ? '/media/pf/' + b.img : ''; }
+  function button(text, cls) { var b = el('button', cls || 'btn btn-outline btn-sm', text); b.type = 'button'; return b; }
+
+  function pfList(flash) {
+    pfBox.textContent = ''; pfBox.appendChild(el('p', 'adm-none', '포트폴리오 글을 불러오는 중이에요…'));
+    return api('GET', '/api/admin/portfolio').then(function (j) { pfItems = j.items || []; pfRenderList(flash); })
+      .catch(function (e) { if (e && e.message === 'auth') return; pfBox.textContent = ''; pfBox.appendChild(el('p', 'adm-none', '포트폴리오 글을 불러오지 못했어요. 새로고침해 주세요.')); });
+  }
+
+  function pfRenderList(flash) {
+    pfBox.textContent = '';
+    var bar = el('div', 'pfa-bar');
+    var add = button('+ 새 사례 글 쓰기', 'btn btn-ink'); add.addEventListener('click', function () { pfEdit(null); });
+    var see = el('a', 'btn btn-outline btn-sm', '홈페이지 포트폴리오 보기'); see.href = '/portfolio.html'; see.target = '_blank'; see.rel = 'noopener';
+    bar.appendChild(add); bar.appendChild(see);
+    pfBox.appendChild(bar);
+    if (flash) pfBox.appendChild(el('p', 'pfa-flash', flash));
+    if (!pfItems.length) {
+      pfBox.appendChild(el('p', 'adm-none', '아직 쓴 사례 글이 없어요. "새 사례 글 쓰기"를 눌러 첫 글을 써보세요. 공개로 저장하면 포트폴리오 페이지의 해당 서비스 탭 맨 위에 카드로 나타나요.'));
+      return;
+    }
+    var list = el('div', 'pfa-list');
+    pfItems.forEach(function (p) {
+      var row = el('article', 'pfa-row');
+      var th = el('div', 'pfa-th'); var cv = pfCover(p);
+      if (cv) { var im = el('img'); im.src = cv; im.alt = ''; im.loading = 'lazy'; th.appendChild(im); } else th.appendChild(el('span', null, '사진 없음'));
+      row.appendChild(th);
+      var info = el('div', 'pfa-info');
+      var top = el('div', 'adm-top');
+      top.appendChild(el('span', 'stpill ' + (p.published ? 'stpill-contacted' : 'stpill-done'), p.published ? '공개' : '비공개'));
+      top.appendChild(el('span', 'adm-date', pfCat(p.category) + ' · ' + fmtDate(p.updatedAt)));
+      info.appendChild(top);
+      info.appendChild(el('h3', null, p.title));
+      if (p.highlight) info.appendChild(el('p', 'pfa-hl', p.highlight));
+      var n = (p.blocks || []).filter(function (b) { return b.type === 'img'; }).length;
+      info.appendChild(el('p', 'pfa-sub', '사진 ' + n + '장 · 설명 글 ' + ((p.blocks || []).length - n) + '개' + (p.sort ? ' · 순서 ' + p.sort : '')));
+      row.appendChild(info);
+      var act = el('div', 'pfa-act');
+      var ed = button('수정', 'btn btn-ink btn-sm'); ed.addEventListener('click', function () { pfEdit(p); });
+      var vw = el('a', 'btn btn-outline btn-sm', p.published ? '페이지 보기' : '미리보기'); vw.href = '/portfolio/' + p.id; vw.target = '_blank'; vw.rel = 'noopener';
+      var del = button('삭제', 'btn btn-outline btn-sm adm-del');
+      del.addEventListener('click', function () {
+        if (!del.dataset.armed) {
+          del.dataset.armed = '1'; del.textContent = '한 번 더 누르면 삭제';
+          setTimeout(function () { if (del.isConnected) { delete del.dataset.armed; del.textContent = '삭제'; } }, 4000);
+          return;
+        }
+        del.disabled = true;
+        api('DELETE', '/api/admin/portfolio/' + p.id).then(function () { pfList('글을 삭제했어요.'); }, function () { del.disabled = false; del.textContent = '삭제하지 못했어요'; });
+      });
+      act.appendChild(ed); act.appendChild(vw); act.appendChild(del);
+      row.appendChild(act);
+      list.appendChild(row);
+    });
+    pfBox.appendChild(list);
+  }
+
+  // 사진 줄이기: 긴 쪽이 너무 크면 줄여서 JPG로 (폰 캡처 화면은 글씨가 읽히게 가로 최대 1200px)
+  function pfShrink(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var w = im.naturalWidth, h = im.naturalHeight, s = Math.min(1, 1200 / w, 2600 / h);
+        var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+        var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) { b ? resolve(b) : reject(new Error('shrink')); }, 'image/jpeg', 0.86);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('shrink')); };
+      im.src = url;
+    }).catch(function () {
+      if (/^image\/(jpeg|png|webp)$/.test(file.type) && file.size < 6 * 1024 * 1024) return file;
+      throw new Error('이 사진은 올릴 수 없어요. 캡처 화면이나 JPG 사진으로 올려주세요.');
+    });
+  }
+  function pfUpload(blob) {
+    return fetch('/api/admin/portfolio/images', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': blob.type || 'image/jpeg' }, body: blob })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 401) { showLogin('로그인이 끝났어요. 다시 로그인해 주세요.'); throw new Error('auth'); }
+          if (r.status === 413) throw new Error('사진이 너무 커요.');
+          if (!r.ok || !j.ok) throw new Error(j.error || '사진을 올리지 못했어요.');
+          return j;
+        });
+      });
+  }
+
+  function pfEdit(src) {
+    var d = src ? JSON.parse(JSON.stringify(src)) : { category: 'threads', title: '', highlight: '', summary: '', industry: '', period: '', link: '', blocks: [], published: false, sort: 0 };
+    d.blocks = d.blocks || [];
+    var dirty = false;
+    pfBox.textContent = '';
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.addEventListener('input', function () { dirty = true; });
+
+    var head = el('div', 'pfa-head');
+    head.appendChild(el('h2', null, src ? '사례 글 수정' : '새 사례 글'));
+    var back = button('목록으로');
+    back.addEventListener('click', function () {
+      if (dirty && !back.dataset.armed) { back.dataset.armed = '1'; back.textContent = '저장 안 하고 나가기'; return; }
+      pfRenderList();
+    });
+    head.appendChild(back);
+    f.appendChild(head);
+
+    var uid = 0;
+    function field(label, input, hint, wide) {
+      var w = el('div', 'pfa-field' + (wide ? ' wide' : '')); input.id = 'pfa-' + (++uid);
+      var l = el('label', null, label); l.setAttribute('for', input.id);
+      w.appendChild(l); w.appendChild(input); if (hint) w.appendChild(el('p', 'pfa-hint', hint));
+      return w;
+    }
+    function input(key, ph, max, type) {
+      var i = el('input'); i.type = type || 'text'; i.value = d[key] || ''; i.placeholder = ph || ''; if (max) i.maxLength = max;
+      i.addEventListener('input', function () { d[key] = i.value; }); return i;
+    }
+    var grid = el('div', 'pfa-grid');
+    var cat = el('select'); PF_CATS.forEach(function (c) { var o = el('option', null, c[1]); o.value = c[0]; if (c[0] === d.category) o.selected = true; cat.appendChild(o); });
+    cat.addEventListener('change', function () { d.category = cat.value; });
+    grid.appendChild(field('서비스', cat, '포트폴리오 페이지에서 이 탭에 나와요.'));
+    grid.appendChild(field('제목 *', input('title', '예: 부천 상동 포차 스레드 첫 달 운영', 200), null));
+    grid.appendChild(field('핵심 결과', input('highlight', '예: 팔로워 20명 → 234명 (4일)', 120), '카드와 페이지 맨 위에 굵게 보여요.'));
+    grid.appendChild(field('업종', input('industry', '예: 인테리어 · 부산', 80)));
+    grid.appendChild(field('진행 기간', input('period', '예: 2026.10.1 ~ 진행 중', 80)));
+    grid.appendChild(field('계정·사이트 주소 (선택)', input('link', 'https://www.threads.com/@...', 300, 'url'), '적으면 페이지 아래에 "운영 계정 보기" 버튼이 생겨요.'));
+    var sum = el('textarea'); sum.rows = 3; sum.maxLength = 400; sum.value = d.summary || ''; sum.placeholder = '예: 시작 4일 만에 견적 비교 글 하나로 문의 5건이 들어온 인테리어 계정이에요.';
+    sum.addEventListener('input', function () { d.summary = sum.value; });
+    grid.appendChild(field('한 줄 설명', sum, '카드 아래와 페이지 제목 밑에 보여요.', true));
+    f.appendChild(grid);
+
+    // 본문 블록
+    var bh = el('div', 'pfa-bhead');
+    bh.appendChild(el('h3', null, '본문 · 사진과 설명'));
+    bh.appendChild(el('p', 'pfa-hint', '위에서부터 순서대로 보여요. 첫 번째 사진이 목록 카드 사진이 돼요. 사진마다 아래에 짧은 설명을 붙일 수 있어요.'));
+    f.appendChild(bh);
+    var bx = el('div', 'pfa-blocks'); f.appendChild(bx);
+
+    function firstImg() { for (var i = 0; i < d.blocks.length; i++) if (d.blocks[i].type === 'img') return i; return -1; }
+    function move(i, dir) { var j = i + dir; if (j < 0 || j >= d.blocks.length) return; var t = d.blocks[i]; d.blocks[i] = d.blocks[j]; d.blocks[j] = t; dirty = true; renderBlocks(); }
+    function renderBlocks() {
+      bx.textContent = '';
+      if (!d.blocks.length) bx.appendChild(el('p', 'pfa-empty', '아래 버튼으로 사진이나 설명 글을 추가하세요.'));
+      var fi = firstImg();
+      d.blocks.forEach(function (b, i) {
+        var card = el('div', 'pfa-blk pfa-blk-' + b.type);
+        var tools = el('div', 'pfa-tools');
+        tools.appendChild(el('span', 'pfa-tag', b.type === 'img' ? (i === fi ? '사진 · 대표 사진' : '사진') : '설명 글'));
+        var up = button('↑', 'pfa-ic'); up.setAttribute('aria-label', '위로'); up.disabled = i === 0; up.addEventListener('click', function () { move(i, -1); });
+        var dn = button('↓', 'pfa-ic'); dn.setAttribute('aria-label', '아래로'); dn.disabled = i === d.blocks.length - 1; dn.addEventListener('click', function () { move(i, 1); });
+        var rm = button('삭제', 'pfa-ic pfa-rm'); rm.addEventListener('click', function () { d.blocks.splice(i, 1); dirty = true; renderBlocks(); });
+        tools.appendChild(up); tools.appendChild(dn); tools.appendChild(rm);
+        card.appendChild(tools);
+        if (b.type === 'img') {
+          var pic = el('div', 'pfa-pic');
+          if (b.error) pic.appendChild(el('p', 'pfa-err', b.error));
+          else if (!b.img) pic.appendChild(el('p', 'pfa-up', '사진 올리는 중…'));
+          else { var im = el('img'); im.src = '/media/pf/' + b.img; im.alt = ''; pic.appendChild(im); }
+          card.appendChild(pic);
+          var cap = el('input'); cap.type = 'text'; cap.maxLength = 400; cap.value = b.caption || ''; cap.placeholder = '사진 설명 (예: 10/4 인사이트 · 팔로워 210명)';
+          cap.setAttribute('aria-label', '사진 설명');
+          cap.addEventListener('input', function () { b.caption = cap.value; });
+          card.appendChild(cap);
+        } else {
+          var ta = el('textarea'); ta.rows = 5; ta.maxLength = 4000; ta.value = b.text || ''; ta.placeholder = '설명을 적어주세요. 빈 줄을 한 줄 넣으면 문단이 나뉘어요.';
+          ta.setAttribute('aria-label', '설명 글');
+          ta.addEventListener('input', function () { b.text = ta.value; });
+          card.appendChild(ta);
+        }
+        bx.appendChild(card);
+      });
+    }
+    renderBlocks();
+
+    var adds = el('div', 'pfa-adds');
+    var fileLbl = el('label', 'btn btn-outline btn-sm pfa-file', '+ 사진 추가');
+    var file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.multiple = true; file.className = 'pfa-file-in';
+    fileLbl.appendChild(file);
+    file.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(file.files || []); file.value = '';
+      files.forEach(function (fl) {
+        var b = { type: 'img', img: 0, caption: '' };
+        d.blocks.push(b); dirty = true;
+        pfShrink(fl).then(pfUpload).then(function (j) { b.img = +j.id; renderBlocks(); })
+          .catch(function (e) { if (e && e.message === 'auth') return; b.error = (e && e.message) || '사진을 올리지 못했어요.'; renderBlocks(); });
+      });
+      renderBlocks();
+    });
+    var addText = button('+ 설명 글 추가');
+    addText.addEventListener('click', function () {
+      d.blocks.push({ type: 'text', text: '' }); dirty = true; renderBlocks();
+      var tas = bx.querySelectorAll('textarea'); if (tas.length) tas[tas.length - 1].focus();
+    });
+    adds.appendChild(fileLbl); adds.appendChild(addText);
+    f.appendChild(adds);
+
+    // 공개 · 순서 · 저장
+    var foot = el('div', 'pfa-foot');
+    var pubW = el('label', 'pfa-check'); var pub = el('input'); pub.type = 'checkbox'; pub.checked = !!d.published;
+    pub.addEventListener('change', function () { d.published = pub.checked; dirty = true; });
+    pubW.appendChild(pub); pubW.appendChild(el('span', null, '홈페이지에 공개'));
+    foot.appendChild(pubW);
+    var sortI = el('input'); sortI.type = 'number'; sortI.value = d.sort || 0; sortI.step = '1';
+    sortI.addEventListener('input', function () { d.sort = parseInt(sortI.value, 10) || 0; });
+    var sortW = field('순서', sortI, '숫자가 클수록 위에 나와요. 같으면 최신 글이 위.'); sortW.className += ' pfa-sort';
+    foot.appendChild(sortW);
+    var saveB = el('button', 'btn btn-ink', '저장'); saveB.type = 'submit';
+    var st = el('p', 'adm-msg');
+    var acts = el('div', 'pfa-save'); acts.appendChild(saveB); acts.appendChild(st);
+    foot.appendChild(acts);
+    f.appendChild(foot);
+
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!String(d.title || '').trim()) { st.textContent = '제목을 적어주세요.'; return; }
+      if (d.blocks.some(function (b) { return b.type === 'img' && !b.img && !b.error; })) { st.textContent = '사진이 다 올라갈 때까지 잠깐만 기다려 주세요.'; return; }
+      var body = {
+        category: d.category, title: d.title, highlight: d.highlight, summary: d.summary, industry: d.industry,
+        period: d.period, link: d.link, published: !!d.published, sort: d.sort || 0,
+        blocks: d.blocks.filter(function (b) { return b.type === 'text' ? String(b.text || '').trim() : b.img; })
+          .map(function (b) { return b.type === 'img' ? { type: 'img', img: b.img, caption: b.caption || '' } : { type: 'text', text: b.text }; })
+      };
+      if (d.link && !/^https?:\/\//i.test(d.link)) { st.textContent = '주소는 https:// 로 시작하게 적어주세요.'; return; }
+      saveB.disabled = true; st.textContent = '저장하는 중…';
+      (src ? api('PUT', '/api/admin/portfolio/' + src.id, body) : api('POST', '/api/admin/portfolio', body)).then(function () {
+        pfList(d.published ? '저장했어요. 홈페이지 포트폴리오에 바로 보여요.' : '비공개로 저장했어요. 목록에서 "미리보기"로 확인할 수 있어요.');
+      }, function (err) {
+        saveB.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
+      });
+    });
+
+    pfBox.appendChild(f);
+    window.scrollTo(0, pfBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
+
 
   if (inClaude) startClaude(); else startServer();
 })();

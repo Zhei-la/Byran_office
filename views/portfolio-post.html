@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{TITLE}}</title>
+<meta name="description" content="{{DESC}}">
+{{ROBOTS}}
+<link rel="canonical" href="{{URL}}">
+<meta property="og:url" content="{{URL}}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="바이란 마케팅">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESC}}">
+<meta property="og:image" content="{{OG_IMAGE}}"><meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,500;0,6..96,600;0,6..96,700;1,6..96,500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="/assets/base.css?v={{VER}}"><link rel="stylesheet" href="/assets/design.css?v={{VER}}">
+<meta name="theme-color" content="#181b18"><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml"></head>
+<body><a class="skip-link" href="#main-content">본문으로 바로가기</a>
+<header class="hd"><div class="wrap hd-in">
+<a class="logo" href="/" aria-label="바이란 마케팅 홈"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a>
+<button class="nav-btn" id="navToggle" type="button" aria-expanded="false" aria-controls="siteNav" aria-label="메뉴 열기"><span></span><span></span><span></span></button>
+<nav class="nav" id="siteNav" aria-label="주 메뉴"><a href="/blog.html">블로그 운영 대행</a><a href="/threads.html">스레드 운영 대행</a><a href="/blog-home.html">홈페이지형 블로그</a><a href="/website.html">홈페이지 제작</a><a href="/pricing.html">서비스 요금</a><a href="/portfolio.html" aria-current="page">포트폴리오</a><a href="/contact.html">문의하기</a><a class="btn btn-peach btn-sm" href="/contact.html#diagnosis">무료 진단 신청</a></nav>
+</div></header>
+<main id="main-content">
+<section class="phero"><div class="wrap phero-in" style="grid-template-columns:1fr">
+<div class="phero-copy"><nav class="crumbs" aria-label="현재 위치"><a href="/">홈</a><span aria-hidden="true">/</span><a href="/portfolio.html#{{CAT_KEY}}">포트폴리오</a><span aria-hidden="true">/</span><span>{{CAT}}</span></nav>
+<p class="eyebrow">{{CAT}}</p><h1 class="h-xl">{{H1}}</h1>
+{{LEAD}}
+{{META}}</div>
+</div></section>
+
+<section class="sec"><div class="wrap"><article class="pfd">
+{{DRAFT}}
+<div class="pfd-body">
+{{BODY}}
+</div>
+<div class="pfd-foot"><a class="btn btn-ink" href="/portfolio.html#{{CAT_KEY}}"><span class="arr" aria-hidden="true">←</span> 포트폴리오 목록</a>{{LINK}}</div>
+</article></div></section>
+</main>
+<section class="cta"><div class="wrap cta-in"><div>
+<h2 class="h-lg">우리 채널도 이렇게<br>키워볼까요?</h2><p>지금 운영 중인 채널을 먼저 무료로 살펴보고, 우리 업종에 맞는 방향을 알려드려요.</p></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap"><a class="btn btn-peach" href="/contact.html#inquiry">문의 남기기 <span class="arr" aria-hidden="true">→</span></a><a class="btn btn-line" href="/contact.html#diagnosis">무료 진단 신청하기</a></div>
+</div></section>
+<footer class="ft"><div class="wrap">
+<div class="ft-top"><a class="logo" href="/"><span class="logo-b">B</span><span class="logo-t">바이란 마케팅<small>BYRAN MEDIA</small></span></a></div>
+<div class="biz"><span><b>상호</b>바이란미디어</span><span><b>대표</b>김가영</span><span><b>사업자등록번호</b>880-26-02267</span><span><b>주소</b>울산광역시 북구 호계9길 52-5, 102호</span><span><b>문의</b><a href="https://open.kakao.com/me/byran_Marketing" target="_blank" rel="noopener">카카오톡 문의하기</a></span></div>
+<div class="copyright"><span>© 2026 BYRAN MEDIA. All rights reserved.</span><span>블로그 운영 대행 · 스레드 운영 대행 · 홈페이지형 블로그 · 홈페이지 제작</span></div>
+</div></footer>
+<script src="/assets/site.js?v={{VER}}" defer></script>
+<script src="/assets/hi.js?v={{VER}}" defer></script>
+</body>
+</html>

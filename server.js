@@ -1,7 +1,8 @@
 /* 바이란 마케팅 홈페이지 서버 (byranmk.com)
    - public/ 폴더의 홈페이지를 그대로 보여준다.
    - POST /api/inquiry : 문의하기 접수 → 데이터베이스에 저장
-   - /admin           : 관리자 문의함 (ADMIN_PASSWORD 로 로그인)
+   - /admin           : 관리자 문의함·방문 통계·포트폴리오 글쓰기 (ADMIN_PASSWORD 로 로그인)
+   - /portfolio/숫자  : 관리자에서 쓴 포트폴리오 사례 페이지 (portfolio.js)
 
    환경변수
    - DATABASE_URL    : Railway PostgreSQL 주소 (없으면 data/inquiries.json 에 저장 — 개발용)
@@ -14,6 +15,7 @@ const crypto = require('crypto');
 const express = require('express');
 const helmet = require('helmet');
 const makeVisits = require('./visits');
+const makePortfolio = require('./portfolio');
 
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
@@ -170,7 +172,7 @@ app.use(helmet({
       'script-src': ["'self'"],
       'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       'font-src': ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      'img-src': ["'self'", 'data:'],
+      'img-src': ["'self'", 'data:', 'blob:'],
       'connect-src': ["'self'"],
       'form-action': ["'self'"],
       'frame-ancestors': ["'none'"],
@@ -266,11 +268,15 @@ app.delete('/api/admin/inquiries/:id', requireAdmin, async (req, res) => {
   catch (e) { console.error('[admin delete]', e.message); res.status(500).json({ ok: false, error: '삭제하지 못했어요.' }); }
 });
 
+/* 포트폴리오 사례 글 (관리자에서 작성) */
+const ASSET_VER = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).slice(0, 8);
+const portfolio = makePortfolio({ query: store.query, requireAdmin, isAdmin, assetVer: ASSET_VER, prod: PROD, root: __dirname });
+portfolio.routes(app);
+
 /* 페이지
    HTML 을 보낼 때 css/js 주소 뒤에 배포 버전(?v=…)을 붙인다.
    → 새로 배포하면 휴대폰 브라우저에 남아 있던 예전 디자인 파일 대신 새 파일을 받아간다. */
 const PUBLIC = path.join(__dirname, 'public');
-const ASSET_VER = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).slice(0, 8);
 const htmlCache = new Map();
 function sendPage(res, file, status = 200) {
   let html = htmlCache.get(file);
@@ -297,5 +303,6 @@ app.use((req, res) => sendPage(res, path.join(PUBLIC, 'index.html'), 404));
 
 store.init()
   .then(() => visits.init())
+  .then(() => portfolio.init())
   .then(() => app.listen(PORT, () => console.log(`byranmk listening on ${PORT} (store: ${store.kind})`)))
   .catch((e) => { console.error('데이터베이스 준비 실패:', e.message); process.exit(1); });

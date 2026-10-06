@@ -68,6 +68,43 @@
     });
   }
 
+  // 포트폴리오 · 관리자에서 쓴 고객 사례 글을 서비스별 탭 맨 위에 카드로 붙이기
+  var pfPanels = document.querySelectorAll('.pf-panel[data-cat]');
+  if (pfPanels.length && !(window.claude && typeof window.claude.use === 'function') && window.fetch) {
+    fetch('/api/portfolio', { credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (j) {
+      if (!j || !j.ok || !j.items || !j.items.length) return;
+      var CAT = { threads: '스레드', blog: '블로그', bloghome: '홈페이지형 블로그', website: '홈페이지' };
+      function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+      pfPanels.forEach(function (panel) {
+        var items = j.items.filter(function (p) { return p.category === panel.dataset.cat; });
+        if (!items.length) return;
+        var wrap = mk('div', 'pf-cases');
+        var head = mk('div', 'pf-panel-head');
+        head.appendChild(mk('h2', null, '고객 사례'));
+        head.appendChild(mk('p', null, '바이란 마케팅이 맡아 운영한 사례예요. 눌러서 자세히 볼 수 있어요.'));
+        wrap.appendChild(head);
+        var grid = mk('div', 'pf-grid pf-stats pf-posts');
+        items.forEach(function (p) {
+          var card = mk('article', 'pf-card pf-real pf-post');
+          var a = mk('a', 'pf-thumb pf-shot pf-stat'); a.href = p.url; a.setAttribute('aria-label', p.title + ' 자세히 보기');
+          if (p.cover) { var im = mk('img'); im.src = p.cover; im.alt = p.title; im.loading = 'lazy'; a.appendChild(im); }
+          else a.appendChild(mk('span', 'pf-noimg', CAT[p.category] || ''));
+          card.appendChild(a);
+          var meta = mk('div', 'pf-meta');
+          meta.appendChild(mk('span', 'pf-cat', (CAT[p.category] || '') + ' · 고객 사례' + (p.industry ? ' · ' + p.industry : '')));
+          var h = mk('h3'); var ha = mk('a', null, p.title); ha.href = p.url; h.appendChild(ha); meta.appendChild(h);
+          if (p.highlight) meta.appendChild(mk('p', 'pf-hl', p.highlight));
+          if (p.summary) meta.appendChild(mk('p', 'pf-desc', p.summary));
+          var go = mk('a', 'pf-go', '자세히 보기 →'); go.href = p.url; go.setAttribute('aria-hidden', 'true'); go.tabIndex = -1; meta.appendChild(go);
+          card.appendChild(meta);
+          grid.appendChild(card);
+        });
+        wrap.appendChild(grid);
+        panel.insertBefore(wrap, panel.firstChild);
+      });
+    }).catch(function () {});
+  }
+
   // 통계 사진 크게 보기
   var zooms = document.querySelectorAll('[data-zoom]');
   if (zooms.length && typeof HTMLDialogElement === 'function') {
@@ -82,8 +119,9 @@
         e.preventDefault();
         var im = a.querySelector('img');
         lbImg.src = a.getAttribute('href'); lbImg.alt = im ? im.alt : '';
+        var fig = a.closest('figure'), fc = fig && fig.querySelector('figcaption');
         var card = a.closest('.pf-card'), h = card && card.querySelector('h3');
-        lbCap.textContent = h ? h.textContent : '';
+        lbCap.textContent = fc ? fc.textContent : h ? h.textContent : '';
         lb.showModal();
       });
     });

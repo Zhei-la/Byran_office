@@ -21,12 +21,12 @@
 <section class="phero"><div class="wrap phero-in" style="grid-template-columns:1fr">
 <div class="phero-copy"><nav class="crumbs" aria-label="현재 위치"><a href="index.html">홈</a><span aria-hidden="true">/</span><span>관리자</span></nav>
 <p class="eyebrow">Admin</p><h1 class="h-xl">관리자</h1>
-<p class="lead">문의함과 방문 통계를 보는 곳이에요. 연락한 문의는 상태를 바꾸고 메모를 남겨두세요.</p></div>
+<p class="lead">문의함과 방문 통계를 보고, 포트폴리오 사례 글을 쓰는 곳이에요.</p></div>
 </div></section>
 <section class="sec admin-sec"><div class="wrap">
 <div id="admState" class="adm-state"><p>문의함을 여는 중이에요…</p></div>
 <div id="admApp" hidden>
-<div class="adm-views" role="group" aria-label="관리 화면 선택" id="admViews"><button type="button" data-view="inq" aria-pressed="true">문의함</button><button type="button" data-view="stats" aria-pressed="false">방문 통계</button></div>
+<div class="adm-views" role="group" aria-label="관리 화면 선택" id="admViews"><button type="button" data-view="inq" aria-pressed="true">문의함</button><button type="button" data-view="stats" aria-pressed="false">방문 통계</button><button type="button" data-view="pf" aria-pressed="false">포트폴리오</button></div>
 <div id="admInq">
 <div class="adm-bar">
 <div class="tabs" role="group" aria-label="상태별 보기" id="admTabs">
@@ -53,6 +53,7 @@
 <p class="st-note">· 방문한 사람은 기기(브라우저) 기준이에요. 스크롤·터치를 하거나 6초 넘게 머문 기기만 세고, 봇과 운영자 기기는 빼요.<br>· 같은 기기라도 30분 넘게 쉬었다가 다시 오면 방문 횟수가 1 늘어요. 날짜는 한국 시간 자정 기준이에요.<br>· 스레드·인스타·카톡 앱 안에서 연 화면은 앱마다 따로 저장돼서, 같은 사람이 다른 앱으로 들어오면 2명으로 셀 수 있어요.<br>· ▲▼는 바로 앞 같은 기간과 비교한 숫자예요. (당일은 어제, 최근 7일은 그 전 7일)</p>
 <details class="st-owner"><summary>내 휴대폰·앱 브라우저를 통계에서 빼기</summary><p>관리자로 로그인한 브라우저는 자동으로 빠져요. 카톡·스레드 앱 안 브라우저처럼 로그인하지 않는 곳은 아래 주소를 그 앱에서 한 번 열어두세요. <b>다른 사람에게 보내지 마세요.</b></p><div class="st-owner-row"><code id="stOwner">-</code><button type="button" class="btn btn-outline btn-sm" id="stOwnerCopy">주소 복사</button></div><p class="st-tip">링크 뒤에 <code>?from=threads</code>, <code>?from=insta</code>처럼 붙여서 올리면 어느 플랫폼에서 왔는지 더 정확하게 잡혀요.</p></details>
 </div>
+<div id="admPf" class="pfa" hidden></div>
 </div>
 </div></section>
 </main>

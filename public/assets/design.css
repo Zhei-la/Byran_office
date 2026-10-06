@@ -393,3 +393,83 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 @media(max-width:700px){.plan-price .was{font-size:16px}}
 /* 빨간 표시 글자가 안 보이던 문제 (.plan-price span 색이 덮어씀) */
 .plan-price .sale-tag,.plan.hl .plan-price .sale-tag{color:#fff;font-size:12.5px;font-weight:700;background:#c0392b;padding:5px 11px;letter-spacing:-.01em}
+
+/* ---------- 포트폴리오 · 고객 사례 카드 (관리자에서 쓴 글) ---------- */
+.pf-cases{margin-bottom:56px}
+.pf-post .pf-thumb{cursor:pointer}
+.pf-post .pf-meta h3 a{color:inherit;text-decoration:none}
+.pf-post .pf-meta h3 a:hover{text-decoration:underline;text-underline-offset:3px}
+.pf-hl{font-size:13.5px;font-weight:600;color:var(--bronze);line-height:1.5;margin-top:2px}
+.pf-go{display:inline-block;margin-top:8px;font-size:13px;font-weight:600;color:var(--text);text-decoration:none}
+.pf-noimg{display:grid;place-items:center;width:100%;height:100%;font:italic 28px var(--serif);color:#b4b8a8}
+
+/* ---------- 포트폴리오 · 사례 페이지 ---------- */
+.pfd-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;align-items:center}
+.pfd-meta .chip b{font-weight:500;opacity:.7;margin-right:4px}
+.pfd-hl{display:inline-block;padding:7px 14px;border-radius:999px;background:var(--peach);color:#2a2418;font-size:14px;font-weight:600}
+.pfd{max-width:760px;margin:0 auto}
+.pfd-draft{margin-bottom:24px;padding:12px 16px;border-radius:3px;background:#fff3d6;color:#6d4c1c;font-size:14px}
+.pfd-body{display:grid;gap:30px}
+.pfd-text{font-size:17px;line-height:1.9;color:var(--text);display:grid;gap:14px;word-break:keep-all;overflow-wrap:anywhere}
+.pfd-fig{margin:0;display:grid;gap:10px}
+.pfd-fig a{display:flex;justify-content:center;background:var(--cream);border:1px solid var(--line);border-radius:4px;overflow:hidden;cursor:zoom-in}
+.pfd-fig img{display:block;max-width:100%;width:auto;height:auto;max-height:82vh}
+.pfd-fig figcaption{font-size:14px;color:var(--muted);line-height:1.7;text-align:center}
+.pfd-empty{color:var(--muted)}
+.pfd-foot{display:flex;flex-wrap:wrap;gap:12px;margin-top:44px;padding-top:28px;border-top:1px solid var(--line)}
+@media(max-width:700px){.pfd-text{font-size:16px}.pfd-body{gap:24px}.pfd-foot .btn{width:100%;justify-content:center}}
+
+/* ---------- 관리자 · 포트폴리오 글쓰기 ---------- */
+.pfa-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.pfa-flash{margin-bottom:16px;padding:12px 16px;border-radius:3px;background:#dde8d6;color:#2f4a2a;font-size:14px}
+.pfa-list{display:grid;gap:12px}
+.pfa-row{display:grid;grid-template-columns:96px 1fr auto;gap:18px;align-items:center;padding:16px 18px;border:1px solid var(--line);border-radius:3px;background:var(--paper)}
+.pfa-th{width:96px;height:120px;border-radius:3px;overflow:hidden;background:var(--cream);display:grid;place-items:center;font-size:12px;color:var(--faint)}
+.pfa-th img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.pfa-info{display:grid;gap:6px;min-width:0}
+.pfa-info h3{font-size:17px;line-height:1.4}
+.pfa-hl{font-size:14px;font-weight:600;color:var(--bronze)}
+.pfa-sub{font-size:13px;color:var(--faint)}
+.pfa-act{display:flex;flex-direction:column;gap:8px}
+.pfa-form{display:grid;gap:22px;max-width:860px}
+.pfa-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.pfa-head h2{font-size:24px;font-weight:600;letter-spacing:-.03em}
+.pfa-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 18px}
+.pfa-field{display:grid;gap:6px;align-content:start}
+.pfa-field.wide{grid-column:1/-1}
+.pfa-field label{font-size:14px;font-weight:600}
+.pfa-field input,.pfa-field select,.pfa-field textarea,.pfa-blk input,.pfa-blk textarea{font:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--line);border-radius:3px;background:var(--paper);color:var(--text);width:100%}
+.pfa-field textarea,.pfa-blk textarea{resize:vertical;line-height:1.7}
+.pfa-field input:focus,.pfa-field select:focus,.pfa-field textarea:focus,.pfa-blk input:focus,.pfa-blk textarea:focus{outline:none;border-color:var(--bronze);box-shadow:0 0 0 3px rgba(148,100,58,.15)}
+.pfa-hint{font-size:12.5px;color:var(--faint);line-height:1.6}
+.pfa-bhead{display:grid;gap:4px;padding-top:18px;border-top:1px solid var(--line)}
+.pfa-bhead h3{font-size:18px}
+.pfa-blocks{display:grid;gap:12px}
+.pfa-empty{padding:22px;border:1px dashed var(--line);border-radius:3px;color:var(--muted);text-align:center;font-size:14px}
+.pfa-blk{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:3px;background:#fff}
+.pfa-blk-text{background:var(--paper)}
+.pfa-tools{display:flex;align-items:center;gap:6px}
+.pfa-tag{margin-right:auto;font-size:12px;font-weight:600;color:var(--bronze);letter-spacing:.02em}
+.pfa-ic{min-width:36px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:3px;background:var(--paper);font:600 14px/1 var(--sans);color:var(--text);cursor:pointer}
+.pfa-ic:disabled{opacity:.35;cursor:default}
+.pfa-rm{color:#9a3b25}
+.pfa-pic{display:flex;justify-content:center;background:var(--cream);border-radius:3px;min-height:80px;align-items:center}
+.pfa-pic img{display:block;max-width:100%;max-height:420px;width:auto;height:auto}
+.pfa-up,.pfa-err{padding:20px;font-size:14px;color:var(--muted)}
+.pfa-err{color:#9a3b25}
+.pfa-adds{display:flex;flex-wrap:wrap;gap:10px}
+.pfa-file{position:relative;cursor:pointer}
+.pfa-file-in{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.pfa-foot{display:grid;grid-template-columns:auto 180px 1fr;gap:16px 24px;align-items:end;padding-top:20px;border-top:1px solid var(--line)}
+.pfa-check{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer;padding-bottom:12px}
+.pfa-check input{width:20px;height:20px;accent-color:var(--ink)}
+.pfa-save{display:flex;align-items:center;gap:14px;justify-content:flex-end;flex-wrap:wrap}
+@media(max-width:700px){
+  .pfa-row{grid-template-columns:72px 1fr;gap:12px;padding:14px}
+  .pfa-th{width:72px;height:92px}
+  .pfa-act{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}
+  .pfa-grid{grid-template-columns:1fr}
+  .pfa-foot{grid-template-columns:1fr}
+  .pfa-save{justify-content:flex-start}
+  .pfa-save .btn{width:100%;justify-content:center}
+}
