@@ -650,6 +650,13 @@
     var f = el('form', 'pfa-form'); f.noValidate = true;
     f.appendChild(ctHead('새 계약서'));
     f.appendChild(el('p', 'pfa-hint', '계약 조건만 적으면 돼요. 우리(을) 정보와 서명은 자동으로 들어가고, 고객(갑) 정보와 서명은 고객이 링크에서 직접 적어요.'));
+    // 요금제 고르면 금액·횟수·개월 수가 한 번에 채워짐 (스레드 요금표 기준)
+    var PLANS = [['', '직접 입력'],
+      ['20-1', '월 20회 · 1개월 · 20만 원'], ['20-2', '월 20회 · 2개월 · 36만 원'], ['20-3', '월 20회 · 3개월 · 53만 원'],
+      ['35-1', '월 35회 · 1개월 · 28만 원'], ['35-2', '월 35회 · 2개월 · 52만 원'], ['35-3', '월 35회 · 3개월 · 77만 원']];
+    var PLAN_TOTAL = { '20-1': 200000, '20-2': 360000, '20-3': 530000, '35-1': 280000, '35-2': 520000, '35-3': 770000 };
+    var planSel = el('select'); PLANS.forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; planSel.appendChild(x); });
+    var pg = el('div', 'pfa-grid'); pg.appendChild(ctField('요금제', planSel, '고르면 아래 금액·횟수·개월 수가 자동으로 채워져요. 고칠 수도 있어요.', true)); f.appendChild(pg);
     var g = el('div', 'pfa-grid');
     var client = ctInput('text', '', '예: 행컵 안산한양대점'); client.maxLength = 100;
     var account = ctInput('text', '', '예: hangcup_ansan (@ 없이)'); account.maxLength = 60;
@@ -694,6 +701,13 @@
       if (!poTouched && digits(poM.value)) poT.value = String(digits(poM.value) * n);
     }
     [start, months, pMon, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
+    planSel.addEventListener('change', function () {
+      var k = planSel.value; if (!k) return;
+      var cnt = +k.split('-')[0], n = +k.split('-')[1], tot = PLAN_TOTAL[k];
+      months.value = String(n); poM.value = String(cnt);
+      pReg.value = String(PLAN_TOTAL[cnt + '-1']); pTot.value = String(tot); pMon.value = String(Math.round(tot / n));
+      totTouched = true; poTouched = false; auto();
+    });
     var foot = el('div', 'pfa-save ct-save');
     var sv = el('button', 'btn btn-ink', '계약서 만들고 링크 받기'); sv.type = 'submit';
     var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
@@ -722,6 +736,10 @@
     var nm = ctInput('text', o.name), ceo = ctInput('text', o.ceo), bz = ctInput('text', o.bizno), ph = ctInput('text', o.phone, '예: 010-0000-0000'), ad = ctInput('text', o.addr);
     g.appendChild(ctField('상호 *', nm)); g.appendChild(ctField('대표자 *', ceo)); g.appendChild(ctField('사업자등록번호', bz)); g.appendChild(ctField('연락처', ph));
     g.appendChild(ctField('주소', ad, null, true));
+    var bk = ctInput('text', o.bank, '예: 국민은행'), acn = ctInput('text', o.account, '예: 123456-01-123456'), hd = ctInput('text', o.holder, '예: 김가영(바이란미디어)');
+    acn.inputMode = 'numeric';
+    g.appendChild(ctField('입금 은행', bk)); g.appendChild(ctField('계좌번호', acn, '적으면 계약서 제2조와 서명 끝난 화면에 입금 계좌로 나와요.'));
+    g.appendChild(ctField('예금주', hd));
     f.appendChild(g);
     var sw = el('div', 'ct-pad-wrap');
     var sh = el('div', 'ct-pad-head'); sh.appendChild(el('span', null, '서명'));
@@ -758,7 +776,7 @@
     });
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var body = { name: nm.value, ceo: ceo.value, bizno: bz.value, phone: ph.value, addr: ad.value };
+      var body = { name: nm.value, ceo: ceo.value, bizno: bz.value, phone: ph.value, addr: ad.value, bank: bk.value, account: acn.value, holder: hd.value };
       if (upData) body.sig = upData; else if (pad && !pad.isEmpty()) body.sig = pad.toPng();
       if (!ctData.hasOurSig && !body.sig) { st.textContent = '서명을 해주세요.'; return; }
       sv.disabled = true; st.textContent = '저장하는 중…';

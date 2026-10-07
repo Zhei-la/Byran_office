@@ -74,6 +74,12 @@
   // 서명 끝난 계약서: PDF로 저장 · 인쇄
   var pr = document.getElementById('ctPrint');
   if (pr) pr.addEventListener('click', function () { window.print(); });
+  var ca = document.getElementById('ctCopyAcc');
+  if (ca) ca.addEventListener('click', function () {
+    var t = ca.getAttribute('data-acc');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { ca.textContent = '복사했어요'; }, function () { window.prompt('길게 눌러 복사하세요', t); })
+      .then(function () { setTimeout(function () { ca.textContent = '계좌번호 복사'; }, 1800); });
+  });
 
   // 고객 서명
   var form = document.getElementById('ctForm');

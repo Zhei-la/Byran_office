@@ -9,7 +9,7 @@
     });
   }
 
-  // 기간 선택 (스레드 1개월 / 2개월)
+  // 기간 선택 (스레드 1개월 / 2개월 / 3개월)
   document.querySelectorAll('[data-period-card]').forEach(function (card) {
     var btns = card.querySelectorAll('[data-period]');
     // 버튼에도 data-price 등이 있으므로 버튼을 제외하고 표시 영역만 고른다
@@ -168,7 +168,7 @@
     var quote = (function () {
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
-      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '20': { '1m': 15, '2m': 26 }, '50': { '1m': 22, '2m': 40 } }, bloghome: 10, website: 15, diag: 0 };
+      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '20': { '1m': 20, '2m': 36, '3m': 53 }, '35': { '1m': 28, '2m': 52, '3m': 77 } }, bloghome: 10, website: 15, diag: 0 };
       var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m', threadsCount: '20' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
       var totalEl = document.getElementById('qTotal'), barTotal = document.getElementById('qBarTotal');
@@ -182,7 +182,7 @@
           var m = PRICE.blog[state.blogPlan];
           list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월', price: m * state.blogMonths });
         }
-        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: '월 ' + state.threadsCount + '회 이상 · ' + (state.threadsPlan === '1m' ? '1개월' : '2개월'), price: PRICE.threads[state.threadsCount][state.threadsPlan] });
+        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: '월 ' + state.threadsCount + '회 · ' + parseInt(state.threadsPlan, 10) + '개월', price: PRICE.threads[state.threadsCount][state.threadsPlan] });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.website });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });

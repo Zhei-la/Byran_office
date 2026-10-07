@@ -14,7 +14,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const sha = (x) => crypto.createHash('sha256').update(x).digest('hex');
 const PHONE_RE = /^[0-9+\-\s().]{8,20}$/;
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,40}$/;
-const OUR_DEFAULT = { name: '바이란미디어', ceo: '김가영', bizno: '880-26-02267', addr: '울산광역시 북구 호계9길 52-5, 102호', phone: '' };
+const OUR_DEFAULT = { name: '바이란미디어', ceo: '김가영', bizno: '880-26-02267', addr: '울산광역시 북구 호계9길 52-5, 102호', phone: '', bank: '', account: '', holder: '' };
 
 /* ---------------- 계약서 내용 ---------------- */
 const won = (n) => (n ? Number(n).toLocaleString('ko-KR') + '원' : '');
@@ -40,7 +40,8 @@ function cleanTerms(b) {
 }
 function cleanOur(b) {
   b = b || {};
-  return { name: clip(b.name, 100), ceo: clip(b.ceo, 50), bizno: clip(b.bizno, 20), addr: clip(b.addr, 200), phone: clip(b.phone, 40) };
+  return { name: clip(b.name, 100), ceo: clip(b.ceo, 50), bizno: clip(b.bizno, 20), addr: clip(b.addr, 200), phone: clip(b.phone, 40),
+    bank: clip(b.bank, 30), account: clip(b.account, 40), holder: clip(b.holder, 40) };
 }
 
 // 계약서 본문 (만들 때 한 번 정해서 저장 — 나중에 문구를 바꿔도 이미 보낸 계약서는 그대로)
@@ -52,11 +53,14 @@ function buildBody(t, our) {
     ['계약 기간', `${ymd(t.start)} ~ ${ymd(t.end)}${t.months ? ` (${t.months}개월)` : ''}`],
   ];
   if (t.testStart || t.testEnd) rows.push(['테스트 기간', `${ymd(t.testStart)} ~ ${ymd(t.testEnd)}`]);
-  if (t.priceRegular) rows.push(['정상 이용금액', `월 ${won(t.priceRegular)} (할인 전 1개월 금액)`]);
-  rows.push(['계약 적용금액', `월 ${won(t.priceMonthly)}`]);
+  if (t.priceRegular) rows.push(['정상 이용금액', `월 ${won(t.priceRegular)} (1개월 계약 금액)`]);
+  const disc = t.priceRegular && t.months ? t.priceRegular * t.months - t.priceTotal : 0;
+  if (disc > 0) rows.push(['기간 할인', `${won(disc)} (${t.months}개월 계약)`]);
+  rows.push(['계약 적용금액', `월 ${won(t.priceMonthly)}${t.months > 1 ? ' (총 계약금액 ÷ 개월 수)' : ''}`]);
   rows.push(['총 계약금액', `${won(t.priceTotal)} (부가세 ${t.vat})`]);
   rows.push(['발행 횟수', `월 ${t.postsMonthly}회${t.postsTotal ? `, 계약 기간 총 ${t.postsTotal}회` : ''}`]);
   rows.push(['결제 방식', t.payment]);
+  if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
   if (t.firstReport) rows.push(['첫 주간 보고', withDay(t.firstReport)]);
   return [
     P(`${t.client}(이하 "갑")와 ${our.name}(이하 "을")는 갑의 스레드 계정 운영 대행에 관하여 다음과 같이 계약을 맺는다.`),
@@ -265,6 +269,17 @@ ${rows.map((r) => `<tr><th scope="row">${r[0]}</th><td>${cell(r[1])}</td><td>${e
 <tr class="ct-sigrow"><th scope="row">서명</th><td>${sigImg('client', c.status === 'signed')}</td><td>${sigImg('our', c.hasOurSig)}</td></tr>
 </tbody></table>`;
 }
+// 서명 후 입금 안내 (총 계약금액 + 계좌)
+function payBox(c) {
+  const o = c.our || {};
+  if (!o.account) return '';
+  const acc = `${o.bank ? o.bank + ' ' : ''}${o.account}`;
+  return `<div class="ct-pay"><p class="ct-pay-h">입금 안내</p>
+<p class="ct-pay-amt">총 ${esc(won(c.terms.priceTotal))} <small>(부가세 ${esc(c.terms.vat)})</small></p>
+<p class="ct-pay-acc"><b>${esc(acc)}</b>${o.holder ? ` · 예금주 ${esc(o.holder)}` : ''}</p>
+<button type="button" class="btn btn-outline btn-sm" id="ctCopyAcc" data-acc="${esc(o.account.replace(/[^0-9-]/g, ''))}">계좌번호 복사</button>
+<p class="ct-tip">입금이 확인되면 운영을 시작해요 (제6조).</p></div>`;
+}
 function renderPage(tpl, c, { token, admin, ua = '' }) {
   const signed = c.status === 'signed';
   const title = '스레드 운영 대행 계약서 | 바이란 마케팅';
@@ -281,7 +296,7 @@ function renderPage(tpl, c, { token, admin, ua = '' }) {
     }
     foot = `<div class="ct-done"><p class="ct-done-h">서명이 끝난 계약서예요</p>
 <p>전자서명 일시 ${esc(kst(c.signedAt))} (한국 시간) · 문서 확인번호 ${esc(hashLabel(c.docHash))}</p>
-<div class="ct-actions"><a class="btn btn-ink" href="${pdfUrl}" download>PDF 파일 받기</a><button type="button" class="btn btn-outline" id="ctPrint">인쇄</button></div>
+${payBox(c)}<div class="ct-actions"><a class="btn btn-ink" href="${pdfUrl}" download>PDF 파일 받기</a><button type="button" class="btn btn-outline" id="ctPrint">인쇄</button></div>
 ${inapp}</div>`;
   } else if (admin) {
     foot = `<div class="ct-admin-note"><p><b>관리자 화면이에요.</b> 고객이 이 주소를 열면 이 자리에 업체 정보 입력 칸과 서명 칸이 나와요. 여기서는 서명하지 않아요.</p></div>`;
