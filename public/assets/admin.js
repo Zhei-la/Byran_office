@@ -731,7 +731,7 @@
     var o = ctData.our || {};
     var f = el('form', 'pfa-form'); f.noValidate = true;
     f.appendChild(ctHead('우리(을) 정보·서명'));
-    f.appendChild(el('p', 'pfa-hint', '여기 적은 정보와 서명이 앞으로 만드는 계약서의 을(대행사) 칸에 자동으로 들어가요. 이미 만든 계약서는 바뀌지 않아요.'));
+    f.appendChild(el('p', 'pfa-hint', '여기 적은 정보·계좌·서명이 계약서의 을(대행사) 칸에 들어가요. 아직 서명 전인 계약서에도 바로 반영되고, 고객이 서명을 끝낸 계약서는 그대로 유지돼요.'));
     var g = el('div', 'pfa-grid');
     var nm = ctInput('text', o.name), ceo = ctInput('text', o.ceo), bz = ctInput('text', o.bizno), ph = ctInput('text', o.phone, '예: 010-0000-0000'), ad = ctInput('text', o.addr);
     g.appendChild(ctField('상호 *', nm)); g.appendChild(ctField('대표자 *', ceo)); g.appendChild(ctField('사업자등록번호', bz)); g.appendChild(ctField('연락처', ph));
@@ -780,7 +780,7 @@
       if (upData) body.sig = upData; else if (pad && !pad.isEmpty()) body.sig = pad.toPng();
       if (!ctData.hasOurSig && !body.sig) { st.textContent = '서명을 해주세요.'; return; }
       sv.disabled = true; st.textContent = '저장하는 중…';
-      api('PUT', '/api/admin/contracts/our', body).then(function () { ctList('우리 정보와 서명을 저장했어요. 새로 만드는 계약서부터 들어가요.'); }, function (err) {
+      api('PUT', '/api/admin/contracts/our', body).then(function () { ctList('우리 정보와 서명을 저장했어요. 서명 전인 계약서에도 바로 반영돼요.'); }, function (err) {
         sv.disabled = false; if (err && err.message === 'auth') return;
         st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요.';
       });

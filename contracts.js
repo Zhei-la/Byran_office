@@ -186,8 +186,9 @@ function makePgStore(query) {
     async remove(id) { const r = await query(`DELETE FROM ct_contracts WHERE id = $1`, [id]); return r.rowCount > 0; },
     async markViewed(token) { await query(`UPDATE ct_contracts SET viewed_at = now() WHERE token = $1 AND viewed_at IS NULL`, [token]); },
     async sign(token, s) {
-      const r = await query(`UPDATE ct_contracts SET status = 'signed', signer = $2, client_sig = $3, signed_at = $4, signed_ip = $5, signed_ua = $6, doc_hash = $7
-        WHERE token = $1 AND status = 'sent'`, [token, JSON.stringify(s.signer), s.sig, s.signedAt, s.ip, s.ua, s.hash]);
+      const r = await query(`UPDATE ct_contracts SET status = 'signed', signer = $2, client_sig = $3, signed_at = $4, signed_ip = $5, signed_ua = $6, doc_hash = $7,
+        our = $8, body = $9, our_sig = $10 WHERE token = $1 AND status = 'sent'`,
+        [token, JSON.stringify(s.signer), s.sig, s.signedAt, s.ip, s.ua, s.hash, JSON.stringify(s.our), JSON.stringify(s.body), s.ourSig || null]);
       return r.rowCount > 0;
     },
     async sig(token, who) {
@@ -219,7 +220,7 @@ function makeFileStore(dir) {
     async markViewed(token) { const d = read(); const c = d.items.find((x) => x.token === token); if (c && !c.viewedAt) { c.viewedAt = new Date().toISOString(); write(d); } },
     async sign(token, s) {
       const d = read(); const c = d.items.find((x) => x.token === token); if (!c || c.status !== 'sent') return false;
-      Object.assign(c, { status: 'signed', signer: s.signer, clientSig: b64(s.sig), signedAt: s.signedAt.toISOString(), signedIp: s.ip, docHash: s.hash });
+      Object.assign(c, { status: 'signed', signer: s.signer, clientSig: b64(s.sig), signedAt: s.signedAt.toISOString(), signedIp: s.ip, docHash: s.hash, our: s.our, body: s.body, ourSig: b64(s.ourSig) });
       write(d); return true;
     },
     async sig(token, who) { const c = read().items.find((x) => x.token === token); return c && unb(who === 'our' ? c.ourSig : c.clientSig); },
@@ -427,13 +428,22 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
   const getOur = async () => { const s = await store.getSetting('our'); return { ...OUR_DEFAULT, ...((s && s.val) || {}) }; };
   const getOurSig = async () => { const s = await store.getSetting('our_sig'); return s && s.bin; };
 
+  // 서명 전 계약서는 지금 등록된 우리(을) 정보·계좌·서명과 최신 문구로 보여줌 (서명하는 순간 그대로 고정)
+  async function view(token) {
+    const c = await store.byToken(token);
+    if (!c || c.status !== 'sent') return c;
+    const our = await getOur(); const ourSig = await getOurSig();
+    return { ...c, our, body: buildBody(c.terms, our), hasOurSig: !!ourSig || c.hasOurSig, ourSigNow: ourSig };
+  }
+  async function ourSigOf(c, token) { return (c && c.ourSigNow) || store.sig(token, 'our'); }
+
   function routes(app) {
     // 고객이 여는 계약서 페이지
     app.get('/c/:token', async (req, res, next) => {
       const token = req.params.token;
       if (!TOKEN_RE.test(token)) return next();
       try {
-        const c = await store.byToken(token);
+        const c = await view(token);
         if (!c) return next();
         const admin = isAdmin(req);
         // 카톡·스레드 등 링크 미리보기 봇은 '고객이 열어봄'으로 세지 않음
@@ -447,9 +457,9 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
       const token = req.params.token;
       if (!TOKEN_RE.test(token)) return next();
       try {
-        const c = await store.byToken(token);
+        const c = await view(token);
         if (!c) return next();
-        const sigs = { our: await store.sig(token, 'our'), client: c.status === 'signed' ? await store.sig(token, 'client') : null };
+        const sigs = { our: await ourSigOf(c, token), client: c.status === 'signed' ? await store.sig(token, 'client') : null };
         const buf = await buildPdf(c, sigs, path.join(root, 'fonts'));
         const name = `스레드운영대행계약서_${(c.terms.client || '').replace(/[\\/:*?"<>|\s]+/g, '_')}.pdf`;
         res.set({ 'Content-Type': 'application/pdf', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex',
@@ -460,7 +470,9 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
     app.get('/c/:token/sig/:who(our|client).png', async (req, res, next) => {
       if (!TOKEN_RE.test(req.params.token)) return next();
       try {
-        const b = await store.sig(req.params.token, req.params.who);
+        let b;
+        if (req.params.who === 'our') { const c = await view(req.params.token); if (!c) return next(); b = await ourSigOf(c, req.params.token); }
+        else b = await store.sig(req.params.token, 'client');
         if (!b) return next();
         res.set({ 'Content-Type': 'image/png', 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }).send(b);
       } catch (e) { console.error('[ct sig]', e.message); res.status(500).end(); }
@@ -479,13 +491,13 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
       const sig = pngFromDataUrl(b.sig, 400 * 1024);
       if (!sig) return fail(res, 400, '서명을 다시 해주세요.');
       try {
-        const c = await store.byToken(token);
+        const c = await view(token);
         if (!c) return fail(res, 404, '계약서를 찾지 못했어요.');
         if (c.status !== 'sent') return fail(res, 409, '이미 서명이 끝난 계약서예요. 새로고침해 주세요.');
         const signedAt = new Date();
-        const ourSig = await store.sig(token, 'our');
+        const ourSig = await ourSigOf(c, token);
         const hash = sha(JSON.stringify({ terms: c.terms, body: c.body, our: c.our, ourSig: ourSig ? sha(ourSig) : '', signer, sig: sha(sig), signedAt: signedAt.toISOString() }));
-        const ok = await store.sign(token, { signer, sig, signedAt, ip: req.ip, ua: clip(req.get('user-agent'), 300), hash });
+        const ok = await store.sign(token, { signer, sig, signedAt, ip: req.ip, ua: clip(req.get('user-agent'), 300), hash, our: c.our, body: c.body, ourSig });
         if (!ok) return fail(res, 409, '이미 서명이 끝난 계약서예요. 새로고침해 주세요.');
         console.log(`[ct] 서명 완료 · ${c.terms.client}`);
         res.json({ ok: true });
