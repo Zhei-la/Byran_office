@@ -36,6 +36,7 @@ function cleanTerms(b) {
     postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000), postsBonus: num(b.postsBonus, 100000),
     payment: clip(b.payment, 80) || '일시불 선결제', firstReport: clip(b.firstReport, 10),
     revisions: Math.max(0, Math.min(10, parseInt(b.revisions, 10) || 0)) || 2,
+    portfolioRequired: b.portfolioRequired === true, // 이벤트가: 포트폴리오 활용 동의가 할인 조건
   };
 }
 function cleanOur(b) {
@@ -69,6 +70,7 @@ function buildBody(t, our) {
   }
   if (base) rows.push(['1회 금액', `${won(Math.round(t.priceTotal / base))} (총 계약금액 ÷ 기본 발행 ${base}회, 환불 계산 기준)`]);
   rows.push(['결제 방식', t.payment]);
+  if (t.portfolioRequired) rows.push(['할인 조건', '포트폴리오 활용 동의 (제12조)']);
   if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
   if (t.firstReport) rows.push(['첫 주간 보고', withDay(t.firstReport)]);
   return [
@@ -119,7 +121,9 @@ function buildBody(t, our) {
     H('제12조 게시물 권리와 포트폴리오'),
     OL('을이 작성해 갑의 계정에 발행한 글의 권리는 대금을 모두 지급한 때부터 갑에게 있다. 계약이 끝나도 갑은 그 글을 계속 쓸 수 있다.',
       '갑이 제공한 사진·자료의 권리는 갑에게 있으며, 을은 이 계약의 업무에만 쓴다.',
-      '을은 갑이 동의한 경우에만 운영 결과(캡처 화면, 수치)를 을의 포트폴리오에 쓸 수 있고, 이때 계정 이름과 개인정보는 가린다.'),
+      t.portfolioRequired
+        ? '이 계약은 갑이 포트폴리오 활용에 동의하는 조건으로 할인된 금액이 적용된 계약이다. 갑은 을이 운영 결과(캡처 화면, 수치)를 을의 포트폴리오에 쓰는 것에 동의하며, 이때 계정 이름과 개인정보는 가린다.'
+        : '을은 갑이 동의한 경우에만 운영 결과(캡처 화면, 수치)를 을의 포트폴리오에 쓸 수 있고, 이때 계정 이름과 개인정보는 가린다.'),
     { t: 'consent' },
     H('제13조 비밀 유지'),
     P('갑과 을은 계약을 하며 알게 된 상대방의 계정 정보, 매출, 고객 정보, 계약 금액을 상대방 동의 없이 제3자에게 알리지 않는다. 이 의무는 계약이 끝난 뒤에도 유지된다.'),
@@ -272,7 +276,7 @@ function bodyHtml(c) {
       html += `<table class="ct-table"><tbody>${b.rows.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}${copyBtn(r[0])}</td></tr>`).join('')}</tbody></table>`;
     }
     else if (b.t === 'consent') {
-      const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : '서명할 때 갑이 선택';
+      const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : (c.terms.portfolioRequired ? '동의 필수 (할인 조건)' : '서명할 때 갑이 선택');
       html += `<p class="ct-consent">포트폴리오 활용 동의: <b>${esc(v)}</b></p>`;
     }
   }
@@ -332,8 +336,10 @@ ${c.terms.account ? '' : '<div class="field"><label for="ctAcc">스레드 계정
 <div class="field"><label for="ctPhone">연락처 *</label><input id="ctPhone" name="phone" maxlength="40" required inputmode="tel" autocomplete="tel"></div>
 <div class="field wide"><label for="ctAddr">주소 *</label><input id="ctAddr" name="addr" maxlength="200" required autocomplete="street-address"></div>
 </div>
-<fieldset class="ct-radio"><legend>포트폴리오 활용 동의 (제12조) *</legend>
-<label><input type="radio" name="consent" value="yes"> 동의</label><label><input type="radio" name="consent" value="no"> 동의하지 않음</label></fieldset>
+${c.terms.portfolioRequired
+  ? '<div class="ct-req"><p class="ct-req-h">포트폴리오 활용 동의 (제12조) *</p><p class="ct-tip">이 계약은 포트폴리오 활용에 동의하는 조건으로 할인된 금액이에요. 운영 결과를 소개할 때 계정 이름과 개인정보는 가려요.</p><label class="ct-agree"><input type="checkbox" name="consent" value="yes"> 포트폴리오 활용에 동의합니다</label></div>'
+  : `<fieldset class="ct-radio"><legend>포트폴리오 활용 동의 (제12조) *</legend>
+<label><input type="radio" name="consent" value="yes"> 동의</label><label><input type="radio" name="consent" value="no"> 동의하지 않음</label></fieldset>`}
 <div class="ct-pad-wrap"><div class="ct-pad-head"><span>서명 *</span><button type="button" class="btn btn-outline btn-sm" id="ctClear">다시 쓰기</button></div>
 <canvas class="ct-pad" id="ctPad" aria-label="서명하는 칸. 손가락이나 마우스로 서명하세요"></canvas><p class="ct-tip">손가락이나 마우스로 칸 안에 서명해 주세요.</p></div>
 <label class="ct-agree"><input type="checkbox" id="ctAgree"> 계약서 내용을 모두 읽었고 이 내용으로 계약하는 데 동의합니다</label>
@@ -414,7 +420,7 @@ function buildPdf(c, sigs, fontDir) {
         doc.moveDown(0.2);
       } else if (b.t === 'table') { doc.moveDown(0.2); table(b.rows, [W * 0.26, W * 0.74]); }
       else if (b.t === 'consent') {
-        const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : '서명할 때 갑이 선택';
+        const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : (c.terms.portfolioRequired ? '동의 필수 (할인 조건)' : '서명할 때 갑이 선택');
         para(`포트폴리오 활용 동의: ${v}`, { bold: true }); doc.moveDown(0.3);
       }
     }
@@ -514,6 +520,7 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const c = await view(token);
         if (!c) return fail(res, 404, '계약서를 찾지 못했어요.');
         if (c.status !== 'sent') return fail(res, 409, '이미 서명이 끝난 계약서예요. 새로고침해 주세요.');
+        if (c.terms.portfolioRequired && signer.consent !== 'yes') return fail(res, 400, '이 계약은 할인 조건이라 포트폴리오 활용 동의가 필요해요.');
         const signedAt = new Date();
         const ourSig = await ourSigOf(c, token);
         // 비워둔 상호·계정은 고객이 적은 값으로 채워서 계약서 확정

@@ -532,6 +532,8 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .ct-done .ct-pay-amt{font-size:22px;font-weight:700;color:var(--text)}
 .ct-pay-amt small{font-size:13px;font-weight:500;color:var(--muted)}
 .ct-done .ct-pay-acc{font-size:15px;color:var(--text)}
+.ct-req{display:grid;gap:6px;padding:14px 16px;border:1px solid #ecd9b4;border-radius:3px;background:#fbf6ea}
+.ct-req-h{font-size:14px;font-weight:700}
 .ct-copy{margin-left:6px;padding:4px 10px;border:1px solid var(--line);border-radius:3px;background:#fff;font:600 12px/1.4 var(--sans);color:var(--text);cursor:pointer;white-space:nowrap}
 .ct-admin-note{background:#fbf3e3;border-color:#ecd9b4;font-size:14px}
 .ct-ft{padding-top:28px;padding-bottom:28px}

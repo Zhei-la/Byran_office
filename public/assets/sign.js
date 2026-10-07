@@ -100,7 +100,7 @@
     for (var i = 0; i < need.length; i++) if (!v(need[i][0])) return bad(need[i][1], form.elements[need[i][0]]);
     if (form.elements.account && !v('account')) return bad('스레드 계정 아이디를 적어주세요.', form.elements.account);
     var consent = form.querySelector('input[name="consent"]:checked');
-    if (!consent) return bad('포트폴리오 활용 동의 여부를 골라주세요.');
+    if (!consent) return bad(form.querySelector('input[name="consent"][type="checkbox"]') ? '할인 조건이라 포트폴리오 활용 동의에 체크해 주세요.' : '포트폴리오 활용 동의 여부를 골라주세요.');
     if (pad.isEmpty()) return bad('서명 칸에 서명해 주세요.', canvas);
     var agree = document.getElementById('ctAgree');
     if (!agree.checked) return bad('계약 내용 동의에 체크해 주세요.', agree);

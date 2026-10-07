@@ -597,6 +597,7 @@
       var info = el('div', 'pfa-info');
       var top = el('div', 'adm-top');
       top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
+      if (t.portfolioRequired) top.appendChild(el('span', 'stpill stpill-done', '할인가 · 포폴 동의 필수'));
       top.appendChild(el('span', 'adm-date', '만든 날 ' + fmtDate(c.createdAt)));
       info.appendChild(top);
       info.appendChild(el('h3', null, (t.client || '상호 고객 입력') + ' · ' + (t.account ? '@' + t.account : '계정 고객 입력')));
@@ -702,6 +703,8 @@
     var pay = ctSelect(['일시불 선결제', '매월 선결제'], (T && T.payment) || '일시불 선결제');
     var rep = ctInput('date', v('firstReport'));
     var rev = ctInput('number', v('revisions', 2)); rev.min = 1; rev.max = 10;
+    var pfW = el('label', 'pfa-check ct-pfreq'); var pfReq = el('input'); pfReq.type = 'checkbox'; pfReq.checked = !!(T && T.portfolioRequired);
+    pfW.appendChild(pfReq); pfW.appendChild(el('span', null, '할인가 계약 · 포트폴리오 활용 동의 필수'));
     g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
     g.appendChild(ctField('스레드 계정', account, '모르면 비워두기 → 고객이 직접 입력'));
     g.appendChild(ctField('시작일 *', start));
@@ -719,6 +722,7 @@
     g.appendChild(ctField('결제 방식', pay));
     g.appendChild(ctField('수정 횟수 (글 한 건당)', rev));
     f.appendChild(g);
+    var pfBoxW = el('div', 'pfa-field wide'); pfBoxW.appendChild(pfW); pfBoxW.appendChild(el('p', 'pfa-hint', '체크하면 고객이 포트폴리오 동의를 꼭 해야 서명할 수 있어요(할인 조건). 체크 안 하면 고객이 동의/미동의를 골라요. 이벤트 요금제는 자동으로 체크돼요.')); f.appendChild(pfBoxW);
     var poTouched = !!(T && T.postsTotal);
     poT.addEventListener('input', function () { poTouched = true; });
     function auto() {
@@ -745,7 +749,7 @@
     planSel.addEventListener('change', function () {
       var p = PLAN[planSel.value]; if (!p) return;
       poM.value = String(p[1]); months.value = String(p[2]);
-      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]); poB.value = String(p[5] || 0);
+      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]); poB.value = String(p[5] || 0); pfReq.checked = planSel.value.indexOf('ev-') === 0;
       poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
@@ -755,7 +759,7 @@
       e.preventDefault();
       var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
         testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
-        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
+        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), portfolioRequired: pfReq.checked, payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
       sv.disabled = true; st.textContent = '저장하는 중…';
       (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
         if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
