@@ -658,9 +658,10 @@
     f.appendChild(ask);
     // 요금제 고르면 금액·횟수·개월 수가 한 번에 채워짐 (스레드 요금표 기준)
     var PLANS = [['', '직접 입력'],
+      ['ev-1', '이벤트 · 월 20회 · 1개월 · 10만 원'], ['ev-2', '이벤트 · 월 20회 · 2개월 · 20만 원'], ['ev-3', '이벤트 · 월 20회 · 3개월 · 25만 원'],
       ['20-1', '월 20회 · 1개월 · 20만 원'], ['20-2', '월 20회 · 2개월 · 36만 원'], ['20-3', '월 20회 · 3개월 · 53만 원'],
       ['35-1', '월 35회 · 1개월 · 28만 원'], ['35-2', '월 35회 · 2개월 · 52만 원'], ['35-3', '월 35회 · 3개월 · 77만 원']];
-    var PLAN_TOTAL = { '20-1': 200000, '20-2': 360000, '20-3': 530000, '35-1': 280000, '35-2': 520000, '35-3': 770000 };
+    var PLAN_TOTAL = { 'ev-1': 100000, 'ev-2': 200000, 'ev-3': 250000, '20-1': 200000, '20-2': 360000, '20-3': 530000, '35-1': 280000, '35-2': 520000, '35-3': 770000 };
     var planSel = el('select'); PLANS.forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; planSel.appendChild(x); });
     var pg = el('div', 'pfa-grid'); pg.appendChild(ctField('요금제', planSel, '고르면 아래 금액·횟수·개월 수가 자동으로 채워져요. 고칠 수도 있어요.', true)); f.appendChild(pg);
     var g = el('div', 'pfa-grid');
@@ -710,7 +711,7 @@
     function askText() {
       var sd = parseD(start.value);
       var when = sd ? (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일' : '11월';
-      return '계약서 준비해 드리려고요\n운영은 ' + when + '부터 시작해요\n아래 내용 복사해서 - 뒤에 답만 적어서 보내주세요\n진행 기간 (1개월 20만 원 / 2개월 36만 원 / 3개월 53만 원) -\n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 돼요';
+      return '계정 대행 운영은 ' + when + '부터 시작됩니다\n\n진행 기간 선택 해주세요! (1개월 10만 원 / 2개월 20만 원 / 3개월 25만 원) - \n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 됩니다 :)';
     }
     function updAsk() { askPre.textContent = askText(); }
     start.addEventListener('input', updAsk); start.addEventListener('change', updAsk);
@@ -718,9 +719,9 @@
     updAsk(); auto();
     planSel.addEventListener('change', function () {
       var k = planSel.value; if (!k) return;
-      var cnt = +k.split('-')[0], n = +k.split('-')[1], tot = PLAN_TOTAL[k];
+      var grp = k.split('-')[0], n = +k.split('-')[1], tot = PLAN_TOTAL[k], cnt = grp === 'ev' ? 20 : +grp;
       months.value = String(n); poM.value = String(cnt);
-      pReg.value = String(PLAN_TOTAL[cnt + '-1']); pTot.value = String(tot); pMon.value = String(Math.round(tot / n));
+      pReg.value = String(PLAN_TOTAL[grp + '-1']); pTot.value = String(tot); pMon.value = String(Math.round(tot / n));
       totTouched = true; poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
