@@ -309,6 +309,9 @@ module.exports = function makePortfolio({ query, requireAdmin, isAdmin, assetVer
   });
 
   function routes(app) {
+    // /portfolio/ 로 들어오면 사진·글자 경로가 깨져서 목록 페이지로 보냄
+    app.get('/portfolio/', (req, res, next) => (req.path === '/portfolio/' ? res.redirect(301, '/portfolio.html') : next()));
+
     // 홈페이지 포트폴리오 목록 (공개 글만)
     app.get('/api/portfolio', async (req, res) => {
       try { res.set('Cache-Control', 'no-cache').json({ ok: true, items: (await store.list(true)).map(pub) }); }
