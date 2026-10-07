@@ -1,0 +1,6 @@
+{
+  "key": "interior-7days-2026-10-blur1",
+  "replace": [
+    { "sha256": "7342eec09b5ac605686b19f5b7f7acc3bbc47d0f63389c5684bef85029ca59a7", "file": "interior7-01-before.jpg" }
+  ]
+}

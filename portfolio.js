@@ -7,6 +7,7 @@
          없으면 data/ 폴더 (개발용) */
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 
 const CATS = {
@@ -110,6 +111,10 @@ function makePgStore(query) {
     async markSeed(key, id) {
       await query(`INSERT INTO pf_seeds (key, post_id) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`, [key, id]);
     },
+    async replaceImage(sha, mime, buf) {
+      const r = await query(`UPDATE pf_images SET data = $1, mime = $2, size = $3 WHERE encode(sha256(data), 'hex') = $4`, [buf, mime, buf.length, sha]);
+      return r.rowCount;
+    },
     async list(onlyPublished) {
       const { rows } = await query(`SELECT * FROM pf_posts ${onlyPublished ? 'WHERE published' : ''} ORDER BY sort DESC, created_at DESC LIMIT 300`);
       return rows.map(row);
@@ -169,6 +174,14 @@ function makeFileStore(dir) {
     async init() {},
     async hasSeed(key) { return (read().seeds || []).includes(key); },
     async markSeed(key) { const d = read(); d.seeds = (d.seeds || []).concat(key); write(d); },
+    async replaceImage(sha, mime, buf) {
+      const d = read(); let n = 0;
+      d.images.forEach((im) => {
+        const f = path.join(imgDir, im.id);
+        try { if (crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex') === sha) { fs.writeFileSync(f, buf); im.mime = mime; n++; } } catch (e) { /* 없음 */ }
+      });
+      write(d); return n;
+    },
     async list(onlyPublished) { return sorted(read().posts.filter((p) => !onlyPublished || p.published)); },
     async get(id) { return read().posts.find((p) => p.id === String(id)) || null; },
     async create(p) {
@@ -202,6 +215,23 @@ function makeFileStore(dir) {
 async function importSeeds(store, dir) {
   let files = [];
   try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort(); } catch (e) { return; }
+  // 이미 들어간 사진 바꾸기 (*.fix.json: { key, replace: [{ sha256: 옛 사진, file: 새 사진 }] }) — 한 번만
+  for (const f of files.filter((x) => x.endsWith('.fix.json'))) {
+    try {
+      const fx = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      const key = clip(fx.key || f, 80);
+      if (await store.hasSeed(key)) continue;
+      let n = 0;
+      for (const r of fx.replace || []) {
+        const buf = fs.readFileSync(path.join(dir, path.basename(r.file)));
+        const mime = sniff(buf);
+        if (mime && /^[0-9a-f]{64}$/.test(r.sha256)) n += await store.replaceImage(r.sha256, mime, buf);
+      }
+      await store.markSeed(key, null);
+      console.log(`[pf seed] ${key} → 사진 ${n}장 바꿈`);
+    } catch (e) { console.error('[pf seed fix]', f, e.message); }
+  }
+  files = files.filter((x) => !x.endsWith('.fix.json'));
   for (const f of files) {
     try {
       const s = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
