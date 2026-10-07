@@ -593,7 +593,7 @@
       top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
       top.appendChild(el('span', 'adm-date', '만든 날 ' + fmtDate(c.createdAt)));
       info.appendChild(top);
-      info.appendChild(el('h3', null, (t.client || '') + ' · @' + (t.account || '')));
+      info.appendChild(el('h3', null, (t.client || '상호 고객 입력') + ' · ' + (t.account ? '@' + t.account : '계정 고객 입력')));
       info.appendChild(el('p', 'pfa-sub', (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · 월 ' + (t.postsMonthly || 0) + '회'));
       if (signed) {
         var sg = c.signer || {};
@@ -649,7 +649,13 @@
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
     f.appendChild(ctHead('새 계약서'));
-    f.appendChild(el('p', 'pfa-hint', '계약 조건만 적으면 돼요. 우리(을) 정보와 서명은 자동으로 들어가고, 고객(갑) 정보와 서명은 고객이 링크에서 직접 적어요.'));
+    f.appendChild(el('p', 'pfa-hint', '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
+    // 기간을 아직 모를 때: 고객에게 먼저 물어보는 문구 (시작일은 아래 시작일 칸 기준)
+    var ask = el('div', 'ct-made ct-ask');
+    ask.appendChild(el('h3', null, '기간을 아직 모를 때 · 고객에게 먼저 물어보기'));
+    var askPre = el('pre', 'ct-pre'); ask.appendChild(askPre);
+    var askCp = button('문구 복사', 'btn btn-ink btn-sm'); ask.appendChild(askCp);
+    f.appendChild(ask);
     // 요금제 고르면 금액·횟수·개월 수가 한 번에 채워짐 (스레드 요금표 기준)
     var PLANS = [['', '직접 입력'],
       ['20-1', '월 20회 · 1개월 · 20만 원'], ['20-2', '월 20회 · 2개월 · 36만 원'], ['20-3', '월 20회 · 3개월 · 53만 원'],
@@ -660,7 +666,7 @@
     var g = el('div', 'pfa-grid');
     var client = ctInput('text', '', '예: 행컵 안산한양대점'); client.maxLength = 100;
     var account = ctInput('text', '', '예: hangcup_ansan (@ 없이)'); account.maxLength = 60;
-    var start = ctInput('date'); var months = ctInput('number', '1'); months.min = 1; months.max = 60;
+    var nm0 = new Date(); var start = ctInput('date', iso(new Date(nm0.getFullYear(), nm0.getMonth() + 1, 1))); var months = ctInput('number', '1'); months.min = 1; months.max = 60;
     var end = ctInput('date');
     var tS = ctInput('date'), tE = ctInput('date');
     var pReg = ctInput('text', '', '예: 200000'); pReg.inputMode = 'numeric';
@@ -672,8 +678,8 @@
     var pay = ctSelect(['일시불 선결제', '매월 선결제'], '일시불 선결제');
     var rep = ctInput('date');
     var rev = ctInput('number', '2'); rev.min = 1; rev.max = 10;
-    g.appendChild(ctField('고객 상호 *', client));
-    g.appendChild(ctField('스레드 계정 *', account));
+    g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(ctField('스레드 계정', account, '모르면 비워두기 → 고객이 직접 입력'));
     g.appendChild(ctField('시작일 *', start));
     g.appendChild(ctField('개월 수 *', months, '시작일과 개월 수를 넣으면 종료일이 자동으로 채워져요.'));
     g.appendChild(ctField('종료일 *', end));
@@ -701,6 +707,15 @@
       if (!poTouched && digits(poM.value)) poT.value = String(digits(poM.value) * n);
     }
     [start, months, pMon, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
+    function askText() {
+      var sd = parseD(start.value);
+      var when = sd ? (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일' : '11월';
+      return '계약서 준비해 드리려고요\n운영은 ' + when + '부터 시작해요\n아래 내용 복사해서 - 뒤에 답만 적어서 보내주세요\n진행 기간 (1개월 20만 원 / 2개월 36만 원 / 3개월 53만 원) -\n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 돼요';
+    }
+    function updAsk() { askPre.textContent = askText(); }
+    start.addEventListener('input', updAsk); start.addEventListener('change', updAsk);
+    askCp.addEventListener('click', function () { copyText(askText(), askCp, '문구 복사'); });
+    updAsk(); auto();
     planSel.addEventListener('change', function () {
       var k = planSel.value; if (!k) return;
       var cnt = +k.split('-')[0], n = +k.split('-')[1], tot = PLAN_TOTAL[k];

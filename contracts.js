@@ -49,7 +49,7 @@ function buildBody(t, our) {
   const H = (x) => ({ t: 'h', x }), P = (x) => ({ t: 'p', x }), OL = (...items) => ({ t: 'ol', items });
   const rows = [
     ['서비스', '스레드 계정 운영 대행 (인스타그램 운영은 포함하지 않음)'],
-    ['대상 계정', '@' + t.account],
+    ['대상 계정', t.account ? '@' + t.account : '갑이 서명할 때 입력'],
     ['계약 기간', `${ymd(t.start)} ~ ${ymd(t.end)}${t.months ? ` (${t.months}개월)` : ''}`],
   ];
   if (t.testStart || t.testEnd) rows.push(['테스트 기간', `${ymd(t.testStart)} ~ ${ymd(t.testEnd)}`]);
@@ -63,7 +63,7 @@ function buildBody(t, our) {
   if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
   if (t.firstReport) rows.push(['첫 주간 보고', withDay(t.firstReport)]);
   return [
-    P(`${t.client}(이하 "갑")와 ${our.name}(이하 "을")는 갑의 스레드 계정 운영 대행에 관하여 다음과 같이 계약을 맺는다.`),
+    P(`${t.client || '아래 서명란의 업체'}(이하 "갑")와 ${our.name}(이하 "을")는 갑의 스레드 계정 운영 대행에 관하여 다음과 같이 계약을 맺는다.`),
     H('제1조 목적'),
     P('이 계약은 을이 갑의 스레드(Threads) 계정을 운영 대행하는 데 필요한 업무 범위, 대금, 권리와 의무를 정하는 것을 목적으로 한다.'),
     H('제2조 계약 정보'),
@@ -187,8 +187,8 @@ function makePgStore(query) {
     async markViewed(token) { await query(`UPDATE ct_contracts SET viewed_at = now() WHERE token = $1 AND viewed_at IS NULL`, [token]); },
     async sign(token, s) {
       const r = await query(`UPDATE ct_contracts SET status = 'signed', signer = $2, client_sig = $3, signed_at = $4, signed_ip = $5, signed_ua = $6, doc_hash = $7,
-        our = $8, body = $9, our_sig = $10 WHERE token = $1 AND status = 'sent'`,
-        [token, JSON.stringify(s.signer), s.sig, s.signedAt, s.ip, s.ua, s.hash, JSON.stringify(s.our), JSON.stringify(s.body), s.ourSig || null]);
+        our = $8, body = $9, our_sig = $10, terms = $11 WHERE token = $1 AND status = 'sent'`,
+        [token, JSON.stringify(s.signer), s.sig, s.signedAt, s.ip, s.ua, s.hash, JSON.stringify(s.our), JSON.stringify(s.body), s.ourSig || null, JSON.stringify(s.terms)]);
       return r.rowCount > 0;
     },
     async sig(token, who) {
@@ -220,7 +220,7 @@ function makeFileStore(dir) {
     async markViewed(token) { const d = read(); const c = d.items.find((x) => x.token === token); if (c && !c.viewedAt) { c.viewedAt = new Date().toISOString(); write(d); } },
     async sign(token, s) {
       const d = read(); const c = d.items.find((x) => x.token === token); if (!c || c.status !== 'sent') return false;
-      Object.assign(c, { status: 'signed', signer: s.signer, clientSig: b64(s.sig), signedAt: s.signedAt.toISOString(), signedIp: s.ip, docHash: s.hash, our: s.our, body: s.body, ourSig: b64(s.ourSig) });
+      Object.assign(c, { status: 'signed', signer: s.signer, clientSig: b64(s.sig), signedAt: s.signedAt.toISOString(), signedIp: s.ip, docHash: s.hash, our: s.our, body: s.body, ourSig: b64(s.ourSig), terms: s.terms });
       write(d); return true;
     },
     async sig(token, who) { const c = read().items.find((x) => x.token === token); return c && unb(who === 'our' ? c.ourSig : c.clientSig); },
@@ -307,6 +307,7 @@ ${inapp}</div>`;
 <p class="ct-form-lead">아래 칸을 채우고 서명해 주세요. 서명하면 계약서가 저장되고 PDF로 받을 수 있어요.</p>
 <div class="ct-grid">
 <div class="field"><label for="ctName">상호 *</label><input id="ctName" name="name" maxlength="100" required value="${esc(c.terms.client)}"></div>
+${c.terms.account ? '' : '<div class="field"><label for="ctAcc">스레드 계정 아이디 *</label><input id="ctAcc" name="account" maxlength="60" required placeholder="예: @byran_shop" autocapitalize="off" autocomplete="off"></div>'}
 <div class="field"><label for="ctCeo">대표자 성함 *</label><input id="ctCeo" name="ceo" maxlength="50" required autocomplete="name"></div>
 <div class="field"><label for="ctBiz">사업자등록번호 (없으면 비워두세요)</label><input id="ctBiz" name="bizno" maxlength="20" inputmode="numeric"></div>
 <div class="field"><label for="ctPhone">연락처 *</label><input id="ctPhone" name="phone" maxlength="40" required inputmode="tel" autocomplete="tel"></div>
@@ -496,8 +497,13 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         if (c.status !== 'sent') return fail(res, 409, '이미 서명이 끝난 계약서예요. 새로고침해 주세요.');
         const signedAt = new Date();
         const ourSig = await ourSigOf(c, token);
+        // 비워둔 상호·계정은 고객이 적은 값으로 채워서 계약서 확정
+        const acc = clip(b.account, 60).replace(/^@+/, '').trim();
+        if (!c.terms.account && !acc) return fail(res, 400, '스레드 계정 아이디를 적어주세요.');
+        const terms = { ...c.terms, client: c.terms.client || signer.name, account: c.terms.account || acc };
+        c.terms = terms; c.body = buildBody(terms, c.our);
         const hash = sha(JSON.stringify({ terms: c.terms, body: c.body, our: c.our, ourSig: ourSig ? sha(ourSig) : '', signer, sig: sha(sig), signedAt: signedAt.toISOString() }));
-        const ok = await store.sign(token, { signer, sig, signedAt, ip: req.ip, ua: clip(req.get('user-agent'), 300), hash, our: c.our, body: c.body, ourSig });
+        const ok = await store.sign(token, { signer, sig, signedAt, ip: req.ip, ua: clip(req.get('user-agent'), 300), hash, our: c.our, body: c.body, ourSig, terms: c.terms });
         if (!ok) return fail(res, 409, '이미 서명이 끝난 계약서예요. 새로고침해 주세요.');
         console.log(`[ct] 서명 완료 · ${c.terms.client}`);
         res.json({ ok: true });
@@ -517,8 +523,6 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
     });
     app.post('/api/admin/contracts', requireAdmin, express.json({ limit: '20kb' }), async (req, res) => {
       const t = cleanTerms(req.body);
-      if (!t.client) return fail(res, 400, '고객 상호를 적어주세요.');
-      if (!t.account) return fail(res, 400, '스레드 계정을 적어주세요.');
       if (!t.start || !t.end) return fail(res, 400, '계약 기간을 적어주세요.');
       if (!t.priceMonthly || !t.priceTotal) return fail(res, 400, '금액을 적어주세요.');
       if (!t.postsMonthly) return fail(res, 400, '월 발행 횟수를 적어주세요.');
