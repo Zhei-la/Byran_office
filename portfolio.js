@@ -111,6 +111,10 @@ function makePgStore(query) {
     async markSeed(key, id) {
       await query(`INSERT INTO pf_seeds (key, post_id) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`, [key, id]);
     },
+    async publishSeeded(key) {
+      const r = await query(`UPDATE pf_posts SET published = true, updated_at = now() WHERE id = (SELECT post_id FROM pf_seeds WHERE key = $1)`, [key]);
+      return r.rowCount;
+    },
     async replaceImage(sha, mime, buf) {
       const r = await query(`UPDATE pf_images SET data = $1, mime = $2, size = $3 WHERE encode(sha256(data), 'hex') = $4`, [buf, mime, buf.length, sha]);
       return r.rowCount;
@@ -174,6 +178,7 @@ function makeFileStore(dir) {
     async init() {},
     async hasSeed(key) { return (read().seeds || []).includes(key); },
     async markSeed(key) { const d = read(); d.seeds = (d.seeds || []).concat(key); write(d); },
+    async publishSeeded() { return 0; },
     async replaceImage(sha, mime, buf) {
       const d = read(); let n = 0;
       d.images.forEach((im) => {
@@ -215,7 +220,7 @@ function makeFileStore(dir) {
 async function importSeeds(store, dir) {
   let files = [];
   try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort(); } catch (e) { return; }
-  // 이미 들어간 사진 바꾸기 (*.fix.json: { key, replace: [{ sha256: 옛 사진, file: 새 사진 }] }) — 한 번만
+  // 이미 들어간 글 고치기 (*.fix.json: { key, replace: [{ sha256: 옛 사진, file: 새 사진 }], publish: [글 key] }) — 한 번만
   for (const f of files.filter((x) => x.endsWith('.fix.json'))) {
     try {
       const fx = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
@@ -227,8 +232,10 @@ async function importSeeds(store, dir) {
         const mime = sniff(buf);
         if (mime && /^[0-9a-f]{64}$/.test(r.sha256)) n += await store.replaceImage(r.sha256, mime, buf);
       }
+      let pub = 0;
+      for (const k of fx.publish || []) pub += await store.publishSeeded(clip(k, 80));
       await store.markSeed(key, null);
-      console.log(`[pf seed] ${key} → 사진 ${n}장 바꿈`);
+      console.log(`[pf seed] ${key} → 사진 ${n}장 바꿈, 공개 ${pub}개`);
     } catch (e) { console.error('[pf seed fix]', f, e.message); }
   }
   files = files.filter((x) => !x.endsWith('.fix.json'));

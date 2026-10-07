@@ -80,7 +80,7 @@
         if (!items.length) return;
         var wrap = mk('div', 'pf-cases');
         var head = mk('div', 'pf-panel-head');
-        head.appendChild(mk('h2', null, '고객 사례'));
+        head.appendChild(mk('h2', null, '고객님 사례'));
         head.appendChild(mk('p', null, '바이란 마케팅이 맡아 운영한 사례예요. 눌러서 자세히 볼 수 있어요.'));
         wrap.appendChild(head);
         var grid = mk('div', 'pf-grid pf-stats pf-posts');
@@ -91,7 +91,7 @@
           else a.appendChild(mk('span', 'pf-noimg', CAT[p.category] || ''));
           card.appendChild(a);
           var meta = mk('div', 'pf-meta');
-          meta.appendChild(mk('span', 'pf-cat', (CAT[p.category] || '') + ' · 고객 사례' + (p.industry ? ' · ' + p.industry : '')));
+          meta.appendChild(mk('span', 'pf-cat', (CAT[p.category] || '') + ' · 고객님 사례' + (p.industry ? ' · ' + p.industry : '')));
           var h = mk('h3'); var ha = mk('a', null, p.title); ha.href = p.url; h.appendChild(ha); meta.appendChild(h);
           if (p.highlight) meta.appendChild(mk('p', 'pf-hl', p.highlight));
           if (p.summary) meta.appendChild(mk('p', 'pf-desc', p.summary));

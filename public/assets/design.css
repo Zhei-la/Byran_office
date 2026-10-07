@@ -474,3 +474,12 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
   .pfa-save{justify-content:flex-start}
   .pfa-save .btn{width:100%;justify-content:center}
 }
+/* 고객님 사례 카드: 한 줄에 하나씩 크게 (사진 왼쪽 · 설명 오른쪽, 모바일은 위아래) */
+.pf-grid.pf-posts{grid-template-columns:1fr;gap:18px}
+.pf-posts .pf-post{display:grid;grid-template-columns:minmax(0,300px) 1fr}
+.pf-posts .pf-post .pf-thumb{aspect-ratio:4/5;border-bottom:0;border-right:1px solid var(--line)}
+.pf-posts .pf-post .pf-meta{padding:28px 32px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.pf-posts .pf-post .pf-meta h3{font-size:22px;line-height:1.4}
+.pf-posts .pf-post .pf-hl{font-size:16px}
+.pf-posts .pf-post .pf-desc{font-size:15px;line-height:1.75}
+@media(max-width:700px){.pf-posts .pf-post{grid-template-columns:1fr}.pf-posts .pf-post .pf-thumb{aspect-ratio:4/3;border-right:0;border-bottom:1px solid var(--line)}.pf-posts .pf-post .pf-meta{padding:18px 18px 20px}.pf-posts .pf-post .pf-meta h3{font-size:18px}.pf-posts .pf-post .pf-desc{font-size:14px}}
