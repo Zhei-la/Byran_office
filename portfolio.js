@@ -97,6 +97,18 @@ function makePgStore(query) {
       )`);
       await query(`CREATE INDEX IF NOT EXISTS idx_pf_images_post ON pf_images (post_id)`);
       await query(`DELETE FROM pf_images WHERE post_id IS NULL AND created_at < now() - interval '1 day'`);
+      await query(`CREATE TABLE IF NOT EXISTS pf_seeds (
+        key        VARCHAR(80) PRIMARY KEY,
+        post_id    INT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )`);
+    },
+    async hasSeed(key) {
+      const { rows } = await query(`SELECT 1 FROM pf_seeds WHERE key = $1`, [key]);
+      return rows.length > 0;
+    },
+    async markSeed(key, id) {
+      await query(`INSERT INTO pf_seeds (key, post_id) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`, [key, id]);
     },
     async list(onlyPublished) {
       const { rows } = await query(`SELECT * FROM pf_posts ${onlyPublished ? 'WHERE published' : ''} ORDER BY sort DESC, created_at DESC LIMIT 300`);
@@ -155,6 +167,8 @@ function makeFileStore(dir) {
   const sorted = (posts) => posts.slice().sort((a, b) => (b.sort - a.sort) || b.createdAt.localeCompare(a.createdAt));
   return {
     async init() {},
+    async hasSeed(key) { return (read().seeds || []).includes(key); },
+    async markSeed(key) { const d = read(); d.seeds = (d.seeds || []).concat(key); write(d); },
     async list(onlyPublished) { return sorted(read().posts.filter((p) => !onlyPublished || p.published)); },
     async get(id) { return read().posts.find((p) => p.id === String(id)) || null; },
     async create(p) {
@@ -182,9 +196,40 @@ function makeFileStore(dir) {
   };
 }
 
+/* ---------------- 미리 써둔 사례 글 가져오기 ----------------
+   seed/portfolio/*.json 을 비공개 글로 한 번만 넣어요 (사진은 같은 폴더 파일).
+   들어간 뒤에는 관리자에서 고치거나 지워도 다시 생기지 않아요 (key 기록). */
+async function importSeeds(store, dir) {
+  let files = [];
+  try { files = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort(); } catch (e) { return; }
+  for (const f of files) {
+    try {
+      const s = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      const key = clip(s.key || f, 80);
+      if (await store.hasSeed(key)) continue;
+      const blocks = [];
+      for (const b of s.blocks || []) {
+        if (b && b.type === 'img' && b.file) {
+          const buf = fs.readFileSync(path.join(dir, path.basename(b.file)));
+          const mime = sniff(buf);
+          if (!mime) continue;
+          blocks.push({ type: 'img', img: +(await store.addImage(mime, buf)), caption: b.caption || '' });
+        } else if (b) blocks.push(b);
+      }
+      const id = await store.create(cleanPost({ ...s, blocks }));
+      await store.markSeed(key, +id);
+      console.log(`[pf seed] ${key} → 글 ${id} (비공개)`);
+    } catch (e) { console.error('[pf seed]', f, e.message); }
+  }
+}
+
 /* ---------------- 사례 페이지 HTML ---------------- */
+// 짧은 한 줄(24자 이하, 마침표 없음)로 시작하는 문단은 소제목으로 보여줘요 (예: "대행 전", "대표님 후기")
+const isHeading = (para) => !para.includes('\n') && para.trim().length <= 24 && !/[.!?。…~]$/.test(para.trim());
 function textHtml(t) {
-  return String(t).split(/\n{2,}/).map((para) => `<p>${esc(para).replace(/\n/g, '<br>')}</p>`).join('');
+  return String(t).split(/\n{2,}/).map((para, i) => (i === 0 && isHeading(para)
+    ? `<h2 class="pfd-h">${esc(para.trim())}</h2>`
+    : `<p>${esc(para).replace(/\n/g, '<br>')}</p>`)).join('');
 }
 function renderPage(tpl, p, { host, draft }) {
   const cat = CATS[p.category] || '포트폴리오';
@@ -293,5 +338,9 @@ module.exports = function makePortfolio({ query, requireAdmin, isAdmin, assetVer
       });
   }
 
-  return { init: () => store.init(), routes, CATS };
+  const init = async () => {
+    await store.init();
+    await importSeeds(store, path.join(root, 'seed', 'portfolio'));
+  };
+  return { init, routes, CATS };
 };

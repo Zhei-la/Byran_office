@@ -1,0 +1,26 @@
+{
+  "key": "interior-7days-2026-10",
+  "category": "threads",
+  "title": "인테리어 업체 스레드 대행 7일 후기",
+  "highlight": "7일 만에 팔로워 25명 → 245명",
+  "industry": "인테리어",
+  "period": "대행 시작 후 7일",
+  "summary": "대행을 시작하고 7일 만에 팔로워가 25명에서 245명으로 늘었어요. 프로필 링크에 걸어둔 시공 상담 신청서도 5건이 들어왔어요.",
+  "published": false,
+  "sort": 0,
+  "blocks": [
+    { "type": "text", "text": "대행 전\n\n대표님이 바쁜 와중에 틈틈이 직접 글을 올리시던 계정이에요. 팔로워 25명, 최근 조회 1.4만 회였어요." },
+    { "type": "img", "file": "interior7-01-before.jpg", "caption": "대행 전 · 팔로워 25명 · 최근 조회 1.4만 회" },
+    { "type": "text", "text": "대행 시작 전 7일 동안 올라간 글들이에요. 잘 나온 글과 안 나온 글의 반응 차이가 컸어요." },
+    { "type": "img", "file": "interior7-02-before-post.jpg", "caption": "대행 전 7일 · 반응이 좋았던 글 좋아요 15 · 댓글 14" },
+    { "type": "img", "file": "interior7-03-before-posts.jpg", "caption": "대행 전 7일 · 다른 글들은 좋아요 2 · 댓글 2 정도" },
+    { "type": "text", "text": "대행에서 한 일\n\n인테리어 견적을 알아보는 분들이 실제로 궁금해하는 이야기로 글을 기획해서 매일 올렸어요.\n프로필 소개글을 정리하고, 프로필 링크에 시공 상담 신청서를 연결해서 글을 보고 바로 상담을 남길 수 있게 했어요." },
+    { "type": "text", "text": "대행 7일째" },
+    { "type": "img", "file": "interior7-04-day7.jpg", "caption": "대행 7일째 · 팔로워 245명 · 최근 조회 4.6만 회" },
+    { "type": "img", "file": "interior7-05-insight.jpg", "caption": "글 하나 인사이트 · 조회수 3,257회 · 프로필 방문 1,131회 · 팔로우 27명" },
+    { "type": "text", "text": "대표님 후기\n\n대표님이 링크 통계와 상담 신청서 화면을 직접 캡처해서 보내주셨어요. 프로필 링크 클릭 117회, 시공 상담 신청서 5건이에요." },
+    { "type": "img", "file": "interior7-06-link-stats.jpg", "caption": "대표님이 보내주신 프로필 링크 통계 · 클릭 117회 · 상담 문의하기 11회" },
+    { "type": "img", "file": "interior7-07-review.jpg", "caption": "시공 상담 신청서 5건 · \"어제 3개 더 들어왔습니다\"" },
+    { "type": "text", "text": "아직 7일 차 결과라 앞으로 어떻게 쌓이는지 계속 업데이트할게요.\n결과는 업종과 계정 상태에 따라 달라질 수 있어요." }
+  ]
+}
