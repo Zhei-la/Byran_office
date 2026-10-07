@@ -671,15 +671,15 @@
     // 요금제: 고르면 기간·횟수·금액이 한 번에 채워짐
     // list = 정상가(그 기간 원래 금액), total = 실제 받는 금액 (중도 해지는 총 계약금액 ÷ 개월 수로 정산)
     var PLAN = {
-      'ev-1': ['이벤트 · 월 20회 · 1개월 · 10만 원', 20, 1, 200000, 100000, 100000],
-      'ev-2': ['이벤트 · 월 20회 · 2개월 · 20만 원', 20, 2, 360000, 200000, 100000],
-      'ev-3': ['이벤트 · 월 20회 · 3개월 · 25만 원', 20, 3, 530000, 250000, 100000],
-      '20-1': ['월 20회 · 1개월 · 20만 원', 20, 1, 200000, 200000, 200000],
-      '20-2': ['월 20회 · 2개월 · 36만 원', 20, 2, 400000, 360000, 200000],
-      '20-3': ['월 20회 · 3개월 · 53만 원', 20, 3, 600000, 530000, 200000],
-      '35-1': ['월 35회 · 1개월 · 28만 원', 35, 1, 280000, 280000, 280000],
-      '35-2': ['월 35회 · 2개월 · 52만 원', 35, 2, 560000, 520000, 280000],
-      '35-3': ['월 35회 · 3개월 · 77만 원', 35, 3, 840000, 770000, 280000]
+      'ev-1': ['이벤트 · 1개월 · 10만 원 · 총 20회', 20, 1, 200000, 100000, 0],
+      'ev-2': ['이벤트 · 2개월 · 20만 원 · 총 50회 (서비스 10회)', 20, 2, 360000, 200000, 10],
+      'ev-3': ['이벤트 · 3개월 · 25만 원 · 총 90회 (서비스 30회)', 20, 3, 530000, 250000, 30],
+      '20-1': ['월 20회 · 1개월 · 20만 원', 20, 1, 200000, 200000, 0],
+      '20-2': ['월 20회 · 2개월 · 36만 원', 20, 2, 400000, 360000, 0],
+      '20-3': ['월 20회 · 3개월 · 53만 원', 20, 3, 600000, 530000, 0],
+      '35-1': ['월 35회 · 1개월 · 28만 원', 35, 1, 280000, 280000, 0],
+      '35-2': ['월 35회 · 2개월 · 52만 원', 35, 2, 560000, 520000, 0],
+      '35-3': ['월 35회 · 3개월 · 77만 원', 35, 3, 840000, 770000, 0]
     };
     var planSel = el('select'); var o0 = el('option', null, T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
     Object.keys(PLAN).forEach(function (k) { var x = el('option', null, PLAN[k][0]); x.value = k; planSel.appendChild(x); });
@@ -698,6 +698,7 @@
     var vat = ctSelect(['별도', '포함'], (T && T.vat) || '별도');
     var poM = ctInput('number', v('postsMonthly', 20)); poM.min = 1;
     var poT = ctInput('number', v('postsTotal')); poT.placeholder = '자동 계산';
+    var poB = ctInput('number', v('postsBonus', 0)); poB.min = 0;
     var pay = ctSelect(['일시불 선결제', '매월 선결제'], (T && T.payment) || '일시불 선결제');
     var rep = ctInput('date', v('firstReport'));
     var rev = ctInput('number', v('revisions', 2)); rev.min = 1; rev.max = 10;
@@ -713,7 +714,8 @@
     g.appendChild(ctField('정상가 (이 기간 원래 금액)', pList, '총 계약금액보다 크면 계약서에 "정상가 → 할인 금액"이 같이 나와요. 할인이 없으면 비워두세요.'));
     g.appendChild(ctField('부가세', vat));
     g.appendChild(ctField('월 발행 횟수 *', poM));
-    g.appendChild(ctField('총 발행 횟수', poT));
+    g.appendChild(ctField('기본 발행 횟수 (환불 기준)', poT, '월 발행 횟수 × 개월 수로 자동 계산돼요.'));
+    g.appendChild(ctField('서비스 횟수 (덤)', poB, '이벤트로 더 드리는 횟수예요. 기본 횟수를 다 쓴 뒤부터 차감하고 환불 계산에는 안 들어가요.'));
     g.appendChild(ctField('결제 방식', pay));
     g.appendChild(ctField('수정 횟수 (글 한 건당)', rev));
     f.appendChild(g);
@@ -743,7 +745,7 @@
     planSel.addEventListener('change', function () {
       var p = PLAN[planSel.value]; if (!p) return;
       poM.value = String(p[1]); months.value = String(p[2]);
-      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]);
+      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]); poB.value = String(p[5] || 0);
       poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
@@ -753,7 +755,7 @@
       e.preventDefault();
       var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
         testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
-        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
+        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
       sv.disabled = true; st.textContent = '저장하는 중…';
       (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
         if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);

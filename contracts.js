@@ -33,7 +33,7 @@ function cleanTerms(b) {
     testStart: clip(b.testStart, 10), testEnd: clip(b.testEnd, 10),
     priceList: num(b.priceList, 1e10), priceTotal: num(b.priceTotal, 1e10),
     vat: b.vat === '포함' ? '포함' : '별도',
-    postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000),
+    postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000), postsBonus: num(b.postsBonus, 100000),
     payment: clip(b.payment, 80) || '일시불 선결제', firstReport: clip(b.firstReport, 10),
     revisions: Math.max(0, Math.min(10, parseInt(b.revisions, 10) || 0)) || 2,
   };
@@ -58,8 +58,16 @@ function buildBody(t, our) {
     rows.push(['할인 금액', won(t.priceList - t.priceTotal)]);
   }
   rows.push(['총 계약금액', `${won(t.priceTotal)} (부가세 ${t.vat})`]);
-  if (t.months > 1) rows.push(['월 금액', `월 ${won(Math.round(t.priceTotal / t.months))} (총 계약금액 ÷ 개월 수)`]);
-  rows.push(['발행 횟수', `월 ${t.postsMonthly}회${t.postsTotal ? `, 계약 기간 총 ${t.postsTotal}회` : ''}`]);
+  // 기본 발행 횟수(환불 기준) + 서비스 횟수(덤, 환불 대상 아님)
+  const base = t.postsTotal || (t.postsMonthly * (t.months || 1));
+  const bonus = t.postsBonus || 0;
+  if (bonus) {
+    rows.push(['발행 횟수', `총 ${base + bonus}회 (기본 ${base}회 + 서비스 ${bonus}회) · 월 ${t.postsMonthly}회 기준`]);
+    rows.push(['서비스 횟수', `${bonus}회 · 기본 ${base}회를 모두 발행한 뒤부터 차감하며 환불 대상이 아님`]);
+  } else {
+    rows.push(['발행 횟수', `월 ${t.postsMonthly}회, 계약 기간 총 ${base}회`]);
+  }
+  if (base) rows.push(['1회 금액', `${won(Math.round(t.priceTotal / base))} (총 계약금액 ÷ 기본 발행 ${base}회, 환불 계산 기준)`]);
   rows.push(['결제 방식', t.payment]);
   if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
   if (t.firstReport) rows.push(['첫 주간 보고', withDay(t.firstReport)]);
@@ -117,8 +125,9 @@ function buildBody(t, our) {
     P('갑과 을은 계약을 하며 알게 된 상대방의 계정 정보, 매출, 고객 정보, 계약 금액을 상대방 동의 없이 제3자에게 알리지 않는다. 이 의무는 계약이 끝난 뒤에도 유지된다.'),
     H('제14조 중도 해지와 환불'),
     OL('업무를 시작하기 전에 갑이 해지하면 을은 받은 금액을 전액 돌려준다.',
-      '업무를 시작한 뒤 갑의 사정으로 해지하면, 이용이 끝난 기간(해지를 알린 날이 속한 달 포함)의 금액을 총 계약금액 ÷ 개월 수(월 금액)로 계산해 총 계약금액에서 빼고 나머지를 돌려준다.',
-      '을의 사정으로 업무를 계속할 수 없으면, 을은 발행하지 못한 횟수만큼(총 계약금액 ÷ 총 발행 횟수 × 남은 횟수) 돌려준다.',
+      '업무를 시작한 뒤 갑의 사정으로 해지하면, 을은 해지를 알린 날까지 발행하지 않은 기본 발행 횟수만큼(총 계약금액 ÷ 기본 발행 횟수 × 남은 기본 발행 횟수) 돌려준다.',
+      '발행 횟수는 기본 발행 횟수부터 차감하고, 서비스 횟수는 기본 발행 횟수를 모두 발행한 뒤부터 차감한다. 서비스 횟수는 무료로 더 드리는 횟수라 환불 계산에 넣지 않는다.',
+      '을의 사정으로 업무를 계속할 수 없으면, 을은 제2항과 같은 방법으로 남은 기본 발행 횟수만큼 돌려준다.',
       '한쪽이 계약을 어기고 상대방이 고쳐 달라고 알린 뒤 7일 안에 고치지 않으면, 상대방은 계약을 해지할 수 있다.',
       '환불은 해지를 알린 날부터 7일 안에 갑의 계좌로 한다.'),
     H('제15조 재계약'),
