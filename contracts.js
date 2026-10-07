@@ -267,7 +267,7 @@ ${rows.map((r) => `<tr><th scope="row">${r[0]}</th><td>${cell(r[1])}</td><td>${e
 }
 function renderPage(tpl, c, { token, admin, ua = '' }) {
   const signed = c.status === 'signed';
-  const title = `스레드 운영 대행 계약서 · ${c.terms.client || ''}`;
+  const title = '스레드 운영 대행 계약서 | 바이란 마케팅';
   let foot = '';
   if (signed) {
     const pdfUrl = `/c/${esc(token)}/contract.pdf`;
@@ -421,7 +421,9 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const c = await store.byToken(token);
         if (!c) return next();
         const admin = isAdmin(req);
-        if (!admin) store.markViewed(token).catch(() => {});
+        // 카톡·스레드 등 링크 미리보기 봇은 '고객이 열어봄'으로 세지 않음
+        const bot = /bot|crawl|spider|scrap|facebookexternalhit|preview|slurp|whatsapp|telegram|discord|yeti|daum|kakao-?talk-?scrap/i.test(req.get('user-agent') || '');
+        if (!admin && !bot) store.markViewed(token).catch(() => {});
         res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex, nofollow' });
         res.type('html').send(renderPage(tpl(), c, { token, admin, ua: req.get('user-agent') || '' }));
       } catch (e) { console.error('[ct page]', e.message); next(); }
