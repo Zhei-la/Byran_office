@@ -3,5 +3,6 @@ Disallow: /admin
 Disallow: /admin.html
 Disallow: /api/
 Disallow: /v/
+Disallow: /c/
 
 Sitemap: https://byranmk.com/sitemap.xml

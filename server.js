@@ -3,6 +3,7 @@
    - POST /api/inquiry : 문의하기 접수 → 데이터베이스에 저장
    - /admin           : 관리자 문의함·방문 통계·포트폴리오 글쓰기 (ADMIN_PASSWORD 로 로그인)
    - /portfolio/숫자  : 관리자에서 쓴 포트폴리오 사례 페이지 (portfolio.js)
+   - /c/긴주소        : 계약서 전자서명 페이지 (contracts.js)
 
    환경변수
    - DATABASE_URL    : Railway PostgreSQL 주소 (없으면 data/inquiries.json 에 저장 — 개발용)
@@ -16,6 +17,7 @@ const express = require('express');
 const helmet = require('helmet');
 const makeVisits = require('./visits');
 const makePortfolio = require('./portfolio');
+const makeContracts = require('./contracts');
 
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT;
@@ -273,6 +275,10 @@ const ASSET_VER = (process.env.RAILWAY_GIT_COMMIT_SHA || String(Date.now())).sli
 const portfolio = makePortfolio({ query: store.query, requireAdmin, isAdmin, assetVer: ASSET_VER, prod: PROD, root: __dirname });
 portfolio.routes(app);
 
+/* 계약서 전자서명 (관리자에서 만들고 /c/긴주소 로 고객이 서명) */
+const contracts = makeContracts({ query: store.query, requireAdmin, isAdmin, assetVer: ASSET_VER, prod: PROD, root: __dirname });
+contracts.routes(app);
+
 /* 페이지
    HTML 을 보낼 때 css/js 주소 뒤에 배포 버전(?v=…)을 붙인다.
    → 새로 배포하면 휴대폰 브라우저에 남아 있던 예전 디자인 파일 대신 새 파일을 받아간다. */
@@ -304,5 +310,6 @@ app.use((req, res) => sendPage(res, path.join(PUBLIC, 'index.html'), 404));
 store.init()
   .then(() => visits.init())
   .then(() => portfolio.init())
+  .then(() => contracts.init())
   .then(() => app.listen(PORT, () => console.log(`byranmk listening on ${PORT} (store: ${store.kind})`)))
   .catch((e) => { console.error('데이터베이스 준비 실패:', e.message); process.exit(1); });

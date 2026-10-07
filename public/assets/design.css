@@ -483,3 +483,91 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .pf-posts .pf-post .pf-hl{font-size:16px}
 .pf-posts .pf-post .pf-desc{font-size:15px;line-height:1.75}
 @media(max-width:700px){.pf-posts .pf-post{grid-template-columns:1fr}.pf-posts .pf-post .pf-thumb{aspect-ratio:4/3;border-right:0;border-bottom:1px solid var(--line)}.pf-posts .pf-post .pf-meta{padding:18px 18px 20px}.pf-posts .pf-post .pf-meta h3{font-size:18px}.pf-posts .pf-post .pf-desc{font-size:14px}}
+/* ---------- 계약서 전자서명 (/c/...) ---------- */
+.ct-body{background:var(--cream)}
+.ct-hd .hd-in{height:68px}
+.ct-main{padding-block:40px 72px}
+.ct-main .wrap{max-width:880px}
+.ct-doc{background:#fff;border:1px solid var(--line);border-radius:3px;padding:48px 52px;color:var(--text);font-size:15px;line-height:1.85;word-break:keep-all;overflow-wrap:anywhere}
+.ct-head{text-align:center;padding-bottom:26px;margin-bottom:26px;border-bottom:2px solid var(--ink)}
+.ct-kicker{font-size:12px;letter-spacing:.2em;color:var(--bronze);font-weight:600}
+.ct-head h1{font-size:28px;font-weight:700;letter-spacing:-.03em;margin:6px 0 4px}
+.ct-meta{font-size:13px;color:var(--muted)}
+.ct-doc > p:first-of-type{margin-bottom:8px}
+.ct-sec{margin-top:24px}
+.ct-sec h2{font-size:16px;font-weight:700;margin-bottom:8px}
+.ct-sec p{margin:6px 0}
+.ct-sec ol{margin:6px 0;padding-left:22px;display:grid;gap:4px}
+.ct-table,.ct-party{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+.ct-table th,.ct-table td,.ct-party th,.ct-party td{border:1px solid #cfd0c6;padding:9px 12px;text-align:left;vertical-align:top}
+.ct-table th,.ct-party th{background:#f4f3ee;font-weight:600;white-space:nowrap;width:1%}
+.ct-party thead th{width:auto;text-align:center}
+.ct-party{margin-top:18px}
+.ct-party td{width:42%}
+.ct-sigrow td{height:96px;vertical-align:middle;text-align:center}
+.ct-sig{max-height:84px;max-width:100%;display:inline-block}
+.ct-blank{color:#9a9c93;font-size:13px}
+.ct-consent{padding:8px 12px;background:#f4f3ee;border-radius:3px}
+.ct-form,.ct-done,.ct-admin-note{margin-top:22px;background:#fff;border:1px solid var(--line);border-radius:3px;padding:32px 36px;display:grid;gap:18px}
+.ct-form h2{font-size:20px;font-weight:700}
+.ct-form-lead{color:var(--muted);font-size:14px;margin-top:-10px}
+.ct-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px}
+.ct-grid .wide{grid-column:1/-1}
+.ct-radio{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center}
+.ct-radio legend{font-size:14px;font-weight:600;margin-bottom:8px;width:100%}
+.ct-radio label{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.ct-radio input,.ct-agree input{width:20px;height:20px;accent-color:var(--ink)}
+.ct-pad-wrap{display:grid;gap:8px}
+.ct-pad-head{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:600}
+.ct-pad{width:100%;height:190px;border:1.5px dashed #b9bab0;border-radius:3px;background:#fff linear-gradient(to top,transparent 44px,#e6e6df 44px,#e6e6df 45px,transparent 45px);cursor:crosshair;touch-action:none;display:block}
+.ct-tip{font-size:12.5px;color:var(--faint);line-height:1.6}
+.ct-agree{display:flex;gap:10px;align-items:flex-start;font-size:15px;font-weight:600;line-height:1.5;cursor:pointer}
+.ct-submit{justify-self:start;min-width:220px;justify-content:center}
+.ct-done{background:#f1f6ee;border-color:#cfdfc6}
+.ct-done-h{font-size:18px;font-weight:700;color:#2f4a2a}
+.ct-done p{font-size:14px;color:#41513c}
+.ct-actions{display:flex;gap:10px;flex-wrap:wrap}
+.ct-admin-note{background:#fbf3e3;border-color:#ecd9b4;font-size:14px}
+.ct-ft{padding-top:28px;padding-bottom:28px}
+/* 관리자 계약서 */
+.ct-warn{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px;padding:14px 18px;border-radius:3px;background:#fbf3e3;color:#6d4c1c;font-size:14px}
+.ct-made{display:grid;gap:10px;margin-bottom:18px;padding:20px 22px;border:1px solid #cfdfc6;border-radius:3px;background:#f1f6ee}
+.ct-made h3{font-size:17px}
+.ct-pre{white-space:pre-wrap;word-break:break-all;font:14px/1.7 var(--sans);background:#fff;border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin:0}
+.ct-row{grid-template-columns:1fr auto}
+.ct-cur{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--cream);border-radius:3px}
+.ct-cur img{max-height:60px;background:#fff;border-radius:3px;padding:4px}
+.ct-upprev{max-height:90px;max-width:260px;border:1px solid var(--line);border-radius:3px;background:#fff;padding:6px}
+.ct-upprev[hidden]{display:none}
+.ct-save{justify-content:flex-start}
+@media(max-width:700px){
+.ct-main{padding-block:16px 40px}
+.ct-doc{padding:26px 18px;font-size:14.5px}
+.ct-head h1{font-size:22px}
+.ct-table th,.ct-table td,.ct-party th,.ct-party td{padding:8px 9px;font-size:13px}
+.ct-table th{white-space:normal;width:30%}
+.ct-party th{white-space:normal;width:22%;word-break:keep-all}
+.ct-party td{width:39%}
+.ct-form,.ct-done,.ct-admin-note{padding:22px 18px}
+.ct-grid{grid-template-columns:1fr}
+.ct-submit{justify-self:stretch}
+.ct-row{grid-template-columns:1fr}
+.adm-views{display:flex;border-radius:999px}
+.adm-views button{flex:1;padding:10px 6px;font-size:13px;white-space:nowrap}
+}
+/* PDF로 저장 · 인쇄: 계약서만 */
+@media print{
+@page{size:A4;margin:16mm 14mm}
+.ct-body{background:#fff}
+.ct-hd,.ct-ft,.ct-form,.ct-done .ct-actions,.ct-done .ct-tip,.ct-admin-note,.skip-link{display:none!important}
+.ct-main{padding:0}
+.ct-main .wrap{max-width:none;padding:0}
+.ct-doc{border:0;padding:0;font-size:11.5pt;line-height:1.7}
+.ct-done{border:0;background:none;padding:10px 0 0;margin-top:8px}
+.ct-done-h{font-size:11pt}
+.ct-done p{font-size:9.5pt;color:#333}
+.ct-sec h2{break-after:avoid}
+.ct-sec li,.ct-sec p{break-inside:avoid}
+.ct-party,.ct-table{break-inside:avoid}
+.ct-table th,.ct-party th{background:#f2f2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

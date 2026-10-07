@@ -1,4 +1,4 @@
-/* 바이란 마케팅 — 관리자 (문의함 · 방문 통계 · 포트폴리오 글쓰기)
+/* 바이란 마케팅 — 관리자 (문의함 · 방문 통계 · 포트폴리오 글쓰기 · 계약서 전자서명)
    실제 홈페이지(byranmk.com): 서버 API + 비밀번호 로그인
    Claude 미리보기: 미리보기 저장소(db) */
 (function () {
@@ -267,6 +267,8 @@
     views.forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-view') === v ? 'true' : 'false'); });
     inqBox.hidden = v !== 'inq'; stBox.hidden = v !== 'stats';
     if (pfBox) pfBox.hidden = v !== 'pf';
+    if (ctBox) ctBox.hidden = v !== 'ct';
+    if (v === 'ct' && !ctLoaded) { ctLoaded = true; ctList(); }
     if (v === 'stats') loadStats();
     if (v === 'pf' && !pfLoaded) { pfLoaded = true; pfList(); }
   }
@@ -290,7 +292,7 @@
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { btn.textContent = '길게 눌러 복사'; })
         .then(function () { setTimeout(function () { btn.textContent = '주소 복사'; }, 1800); });
     });
-    if (inClaude) { views[1].hidden = true; if (views[2]) views[2].hidden = true; }
+    if (inClaude) { views[1].hidden = true; if (views[2]) views[2].hidden = true; if (views[3]) views[3].hidden = true; }
     setInterval(function () { if (stView === 'stats' && !app.hidden && document.visibilityState === 'visible') loadStats(); }, 60000);
   }
 
@@ -534,6 +536,237 @@
 
     pfBox.appendChild(f);
     window.scrollTo(0, pfBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
+
+
+  /* ---------- 계약서 전자서명 (실제 서버에서만) ----------
+     계약 조건을 적어 만들면 서명 링크가 생기고, 고객이 링크에서 업체 정보·서명을 하면 저장된다.
+     우리(을) 정보·서명은 "우리 정보·서명"에서 한 번 등록 → 새 계약서마다 자동으로 들어간다. */
+  var ctBox = document.getElementById('admCt');
+  var ctLoaded = false, ctData = { items: [], our: {}, hasOurSig: false };
+  function copyText(t, btn, label) {
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { window.prompt('길게 눌러 복사하세요', t); })
+      .then(function () { setTimeout(function () { if (btn.isConnected) btn.textContent = label; }, 1800); });
+  }
+  function ctMsg(url) {
+    return '계약서 보내드려요\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 돼요\n서명하시면 계약서를 PDF로 저장하실 수 있어요\n' + url;
+  }
+  function won(n) { return n ? Number(n).toLocaleString('ko-KR') + '원' : '-'; }
+  function ctList(flash, created) {
+    ctBox.textContent = ''; ctBox.appendChild(el('p', 'adm-none', '계약서를 불러오는 중이에요…'));
+    return api('GET', '/api/admin/contracts').then(function (j) { ctData = j; ctRender(flash, created); })
+      .catch(function (e) { if (e && e.message === 'auth') return; ctBox.textContent = ''; ctBox.appendChild(el('p', 'adm-none', '계약서를 불러오지 못했어요. 새로고침해 주세요.')); });
+  }
+  function ctRender(flash, created) {
+    ctBox.textContent = '';
+    var bar = el('div', 'pfa-bar');
+    var add = button('+ 새 계약서', 'btn btn-ink'); add.addEventListener('click', ctNew);
+    var our = button('우리 정보·서명'); our.addEventListener('click', ctOur);
+    bar.appendChild(add); bar.appendChild(our); ctBox.appendChild(bar);
+    if (!ctData.hasOurSig) {
+      var w = el('div', 'ct-warn');
+      w.appendChild(el('p', null, '우리(을) 서명이 아직 없어요. 한 번 등록해 두면 새 계약서마다 자동으로 들어가요.'));
+      var go = button('서명 등록하기', 'btn btn-ink btn-sm'); go.addEventListener('click', ctOur); w.appendChild(go);
+      ctBox.appendChild(w);
+    }
+    if (flash) ctBox.appendChild(el('p', 'pfa-flash', flash));
+    if (created) {
+      var box = el('div', 'ct-made');
+      box.appendChild(el('h3', null, '서명 링크가 만들어졌어요'));
+      box.appendChild(el('p', 'pfa-hint', '아래 문구를 복사해서 고객 카톡으로 보내주세요. 고객이 서명하면 이 목록에 "서명 완료"로 바뀌어요.'));
+      var pre = el('pre', 'ct-pre', ctMsg(created)); box.appendChild(pre);
+      var acts = el('div', 'pfa-adds');
+      var cm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); cm.addEventListener('click', function () { copyText(ctMsg(created), cm, '카톡 문구 복사'); });
+      var cl = button('링크만 복사'); cl.addEventListener('click', function () { copyText(created, cl, '링크만 복사'); });
+      var op = el('a', 'btn btn-outline btn-sm', '계약서 열어보기'); op.href = created; op.target = '_blank'; op.rel = 'noopener';
+      acts.appendChild(cm); acts.appendChild(cl); acts.appendChild(op); box.appendChild(acts);
+      ctBox.appendChild(box);
+    }
+    var items = ctData.items || [];
+    if (!items.length) { ctBox.appendChild(el('p', 'adm-none', '아직 만든 계약서가 없어요. "새 계약서"를 눌러 계약 조건을 적으면 고객에게 보낼 서명 링크가 생겨요.')); return; }
+    var list = el('div', 'pfa-list');
+    items.forEach(function (c) {
+      var t = c.terms || {}, signed = c.status === 'signed';
+      var row = el('article', 'pfa-row ct-row');
+      var info = el('div', 'pfa-info');
+      var top = el('div', 'adm-top');
+      top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
+      top.appendChild(el('span', 'adm-date', '만든 날 ' + fmtDate(c.createdAt)));
+      info.appendChild(top);
+      info.appendChild(el('h3', null, (t.client || '') + ' · @' + (t.account || '')));
+      info.appendChild(el('p', 'pfa-sub', (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · 월 ' + (t.postsMonthly || 0) + '회'));
+      if (signed) {
+        var sg = c.signer || {};
+        info.appendChild(el('p', 'pfa-hl', '서명 ' + fmtDate(c.signedAt) + ' · ' + (sg.ceo || '') + ' · ' + (sg.phone || '') + ' · 포트폴리오 ' + (sg.consent === 'yes' ? '동의' : '미동의')));
+      } else {
+        info.appendChild(el('p', 'pfa-sub', c.viewedAt ? '고객이 열어봄 ' + fmtDate(c.viewedAt) : '고객이 아직 안 열어봤어요'));
+      }
+      row.appendChild(info);
+      var act = el('div', 'pfa-act');
+      var op = el('a', 'btn btn-ink btn-sm', signed ? '계약서 보기 · PDF' : '열어보기'); op.href = c.url; op.target = '_blank'; op.rel = 'noopener';
+      act.appendChild(op);
+      if (!signed) {
+        var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url), cm, '카톡 문구 복사'); });
+        act.appendChild(cm);
+      }
+      var cl = button('링크 복사'); cl.addEventListener('click', function () { copyText(c.url, cl, '링크 복사'); });
+      act.appendChild(cl);
+      var del = button('삭제', 'btn btn-outline btn-sm adm-del');
+      del.addEventListener('click', function () {
+        if (!del.dataset.armed) {
+          del.dataset.armed = '1'; del.textContent = signed ? '서명된 계약서예요 · 한 번 더 누르면 삭제' : '한 번 더 누르면 삭제';
+          setTimeout(function () { if (del.isConnected) { delete del.dataset.armed; del.textContent = '삭제'; } }, 4000);
+          return;
+        }
+        del.disabled = true;
+        api('DELETE', '/api/admin/contracts/' + c.id).then(function () { ctList('계약서를 삭제했어요. 보냈던 링크도 더 이상 열리지 않아요.'); }, function () { del.disabled = false; del.textContent = '삭제하지 못했어요'; });
+      });
+      act.appendChild(del);
+      row.appendChild(act);
+      list.appendChild(row);
+    });
+    ctBox.appendChild(list);
+  }
+
+  function ctHead(title) {
+    var head = el('div', 'pfa-head'); head.appendChild(el('h2', null, title));
+    var back = button('목록으로'); back.addEventListener('click', function () { ctRender(); }); head.appendChild(back);
+    return head;
+  }
+  function ctField(label, inp, hint, wide) {
+    var w = el('div', 'pfa-field' + (wide ? ' wide' : '')); inp.id = 'ct-' + Math.random().toString(36).slice(2, 8);
+    var l = el('label', null, label); l.setAttribute('for', inp.id);
+    w.appendChild(l); w.appendChild(inp); if (hint) w.appendChild(el('p', 'pfa-hint', hint)); return w;
+  }
+  function ctInput(type, val, ph) { var i = el('input'); i.type = type || 'text'; if (val != null) i.value = val; if (ph) i.placeholder = ph; return i; }
+  function ctSelect(opts, val) { var s = el('select'); opts.forEach(function (o) { var x = el('option', null, o); x.value = o; if (o === val) x.selected = true; s.appendChild(x); }); return s; }
+  function iso(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function parseD(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function digits(s) { return parseInt(String(s || '').replace(/[^\d]/g, ''), 10) || 0; }
+
+  function ctNew() {
+    ctBox.textContent = '';
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.appendChild(ctHead('새 계약서'));
+    f.appendChild(el('p', 'pfa-hint', '계약 조건만 적으면 돼요. 우리(을) 정보와 서명은 자동으로 들어가고, 고객(갑) 정보와 서명은 고객이 링크에서 직접 적어요.'));
+    var g = el('div', 'pfa-grid');
+    var client = ctInput('text', '', '예: 행컵 안산한양대점'); client.maxLength = 100;
+    var account = ctInput('text', '', '예: hangcup_ansan (@ 없이)'); account.maxLength = 60;
+    var start = ctInput('date'); var months = ctInput('number', '1'); months.min = 1; months.max = 60;
+    var end = ctInput('date');
+    var tS = ctInput('date'), tE = ctInput('date');
+    var pReg = ctInput('text', '', '예: 200000'); pReg.inputMode = 'numeric';
+    var pMon = ctInput('text', '', '예: 150000'); pMon.inputMode = 'numeric';
+    var pTot = ctInput('text', '', '자동 계산 (고칠 수 있어요)'); pTot.inputMode = 'numeric';
+    var vat = ctSelect(['별도', '포함'], '별도');
+    var poM = ctInput('number', '30'); poM.min = 1;
+    var poT = ctInput('number', ''); poT.placeholder = '자동 계산';
+    var pay = ctSelect(['일시불 선결제', '매월 선결제'], '일시불 선결제');
+    var rep = ctInput('date');
+    var rev = ctInput('number', '2'); rev.min = 1; rev.max = 10;
+    g.appendChild(ctField('고객 상호 *', client));
+    g.appendChild(ctField('스레드 계정 *', account));
+    g.appendChild(ctField('시작일 *', start));
+    g.appendChild(ctField('개월 수 *', months, '시작일과 개월 수를 넣으면 종료일이 자동으로 채워져요.'));
+    g.appendChild(ctField('종료일 *', end));
+    g.appendChild(ctField('첫 주간 보고일', rep, '시작하고 첫 화요일로 자동으로 채워져요.'));
+    g.appendChild(ctField('테스트 기간 시작 (없으면 비워두기)', tS));
+    g.appendChild(ctField('테스트 기간 종료', tE));
+    g.appendChild(ctField('정상 이용금액 (월, 할인 전)', pReg, '할인해서 계약할 때 적어두면 중도 해지 정산 기준이 돼요.'));
+    g.appendChild(ctField('계약 적용금액 (월) *', pMon));
+    g.appendChild(ctField('총 계약금액 *', pTot));
+    g.appendChild(ctField('부가세', vat));
+    g.appendChild(ctField('월 발행 횟수 *', poM));
+    g.appendChild(ctField('총 발행 횟수', poT));
+    g.appendChild(ctField('결제 방식', pay));
+    g.appendChild(ctField('수정 횟수 (글 한 건당)', rev));
+    f.appendChild(g);
+    var totTouched = false, poTouched = false;
+    pTot.addEventListener('input', function () { totTouched = true; }); poT.addEventListener('input', function () { poTouched = true; });
+    function auto() {
+      var n = Math.max(1, digits(months.value)), sd = parseD(start.value);
+      if (sd) {
+        var e = new Date(sd.getFullYear(), sd.getMonth() + n, sd.getDate() - 1); end.value = iso(e);
+        var r = new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() + 6); while (r.getDay() !== 2) r.setDate(r.getDate() + 1); rep.value = iso(r);
+      }
+      if (!totTouched && digits(pMon.value)) pTot.value = String(digits(pMon.value) * n);
+      if (!poTouched && digits(poM.value)) poT.value = String(digits(poM.value) * n);
+    }
+    [start, months, pMon, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
+    var foot = el('div', 'pfa-save ct-save');
+    var sv = el('button', 'btn btn-ink', '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
+        testStart: tS.value, testEnd: tE.value, priceRegular: digits(pReg.value), priceMonthly: digits(pMon.value), priceTotal: digits(pTot.value),
+        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
+      sv.disabled = true; st.textContent = '만드는 중…';
+      api('POST', '/api/admin/contracts', body).then(function (j) { ctList(null, j.url); }, function (err) {
+        sv.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '만들지 못했어요. 잠시 후 다시 시도해 주세요.';
+      });
+    });
+    ctBox.appendChild(f);
+    window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
+
+  function ctOur() {
+    ctBox.textContent = '';
+    var o = ctData.our || {};
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.appendChild(ctHead('우리(을) 정보·서명'));
+    f.appendChild(el('p', 'pfa-hint', '여기 적은 정보와 서명이 앞으로 만드는 계약서의 을(대행사) 칸에 자동으로 들어가요. 이미 만든 계약서는 바뀌지 않아요.'));
+    var g = el('div', 'pfa-grid');
+    var nm = ctInput('text', o.name), ceo = ctInput('text', o.ceo), bz = ctInput('text', o.bizno), ph = ctInput('text', o.phone, '예: 010-0000-0000'), ad = ctInput('text', o.addr);
+    g.appendChild(ctField('상호 *', nm)); g.appendChild(ctField('대표자 *', ceo)); g.appendChild(ctField('사업자등록번호', bz)); g.appendChild(ctField('연락처', ph));
+    g.appendChild(ctField('주소', ad, null, true));
+    f.appendChild(g);
+    var sw = el('div', 'ct-pad-wrap');
+    var sh = el('div', 'ct-pad-head'); sh.appendChild(el('span', null, '서명'));
+    var clr = button('다시 쓰기'); sh.appendChild(clr); sw.appendChild(sh);
+    if (ctData.hasOurSig) {
+      var curW = el('div', 'ct-cur'); curW.appendChild(el('span', 'pfa-hint', '지금 등록된 서명'));
+      var ci = el('img'); ci.src = '/api/admin/contracts/our-sig.png?t=' + Date.now(); ci.alt = '지금 등록된 서명'; curW.appendChild(ci); sw.appendChild(curW);
+    }
+    var cv = el('canvas', 'ct-pad'); sw.appendChild(cv);
+    sw.appendChild(el('p', 'pfa-hint', ctData.hasOurSig ? '바꾸고 싶을 때만 칸 안에 새로 서명하세요. 비워두면 지금 서명을 그대로 써요.' : '손가락이나 마우스로 칸 안에 서명하세요.'));
+    var upL = el('label', 'btn btn-outline btn-sm pfa-file', '도장·서명 사진으로 넣기');
+    var up = el('input'); up.type = 'file'; up.accept = 'image/*'; up.className = 'pfa-file-in'; upL.appendChild(up);
+    var upPrev = el('img', 'ct-upprev'); upPrev.hidden = true;
+    sw.appendChild(upL); sw.appendChild(upPrev);
+    f.appendChild(sw);
+    var foot = el('div', 'pfa-save ct-save');
+    var sv = el('button', 'btn btn-ink', '저장'); sv.type = 'submit'; var st = el('p', 'adm-msg');
+    foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
+    ctBox.appendChild(f);
+    var pad = window.ByranPad ? window.ByranPad(cv) : null;
+    var upData = '';
+    clr.addEventListener('click', function () { if (pad) pad.clear(); upData = ''; upPrev.hidden = true; });
+    up.addEventListener('change', function () {
+      var file = up.files && up.files[0]; up.value = ''; if (!file) return;
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var s = Math.min(1, 600 / im.naturalWidth, 300 / im.naturalHeight);
+        var c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * s); c.height = Math.round(im.naturalHeight * s);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+        upData = c.toDataURL('image/png'); upPrev.src = upData; upPrev.hidden = false; if (pad) pad.clear();
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); st.textContent = '이 사진은 넣을 수 없어요. JPG나 PNG로 넣어주세요.'; };
+      im.src = url;
+    });
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var body = { name: nm.value, ceo: ceo.value, bizno: bz.value, phone: ph.value, addr: ad.value };
+      if (upData) body.sig = upData; else if (pad && !pad.isEmpty()) body.sig = pad.toPng();
+      if (!ctData.hasOurSig && !body.sig) { st.textContent = '서명을 해주세요.'; return; }
+      sv.disabled = true; st.textContent = '저장하는 중…';
+      api('PUT', '/api/admin/contracts/our', body).then(function () { ctList('우리 정보와 서명을 저장했어요. 새로 만드는 계약서부터 들어가요.'); }, function (err) {
+        sv.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요.';
+      });
+    });
+    window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
   }
 
 
