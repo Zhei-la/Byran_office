@@ -31,7 +31,7 @@ function cleanTerms(b) {
     client: clip(b.client, 100), account: clip(b.account, 60).replace(/^@+/, ''),
     start: clip(b.start, 10), end: clip(b.end, 10), months: num(b.months, 60),
     testStart: clip(b.testStart, 10), testEnd: clip(b.testEnd, 10),
-    priceList: num(b.priceList, 1e10), priceTotal: num(b.priceTotal, 1e10), priceRef: num(b.priceRef, 1e9),
+    priceList: num(b.priceList, 1e10), priceTotal: num(b.priceTotal, 1e10),
     vat: b.vat === '포함' ? '포함' : '별도',
     postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000),
     payment: clip(b.payment, 80) || '일시불 선결제', firstReport: clip(b.firstReport, 10),
@@ -53,15 +53,12 @@ function buildBody(t, our) {
     ['계약 기간', `${ymd(t.start)} ~ ${ymd(t.end)}${t.months ? ` (${t.months}개월)` : ''}`],
   ];
   if (t.testStart || t.testEnd) rows.push(['테스트 기간', `${ymd(t.testStart)} ~ ${ymd(t.testEnd)}`]);
-  // 예전 계약서(정상 이용금액·계약 적용금액)도 그대로 읽히게
-  const ref = t.priceRef || t.priceRegular || 0;
   if (t.priceList && t.priceList > t.priceTotal) {
     rows.push(['정상가', `${won(t.priceList)}${t.months ? ` (${t.months}개월)` : ''}`]);
     rows.push(['할인 금액', won(t.priceList - t.priceTotal)]);
   }
   rows.push(['총 계약금액', `${won(t.priceTotal)} (부가세 ${t.vat})`]);
   if (t.months > 1) rows.push(['월 금액', `월 ${won(Math.round(t.priceTotal / t.months))} (총 계약금액 ÷ 개월 수)`]);
-  if (ref) rows.push(['중도 해지 정산 기준', `월 ${won(ref)} (1개월 금액)`]);
   rows.push(['발행 횟수', `월 ${t.postsMonthly}회${t.postsTotal ? `, 계약 기간 총 ${t.postsTotal}회` : ''}`]);
   rows.push(['결제 방식', t.payment]);
   if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
@@ -120,7 +117,7 @@ function buildBody(t, our) {
     P('갑과 을은 계약을 하며 알게 된 상대방의 계정 정보, 매출, 고객 정보, 계약 금액을 상대방 동의 없이 제3자에게 알리지 않는다. 이 의무는 계약이 끝난 뒤에도 유지된다.'),
     H('제14조 중도 해지와 환불'),
     OL('업무를 시작하기 전에 갑이 해지하면 을은 받은 금액을 전액 돌려준다.',
-      `업무를 시작한 뒤 갑의 사정으로 해지하면, 이용이 끝난 기간(해지를 알린 날이 속한 달 포함)의 금액을 ${(t.priceRef || t.priceRegular) ? '제2조의 중도 해지 정산 기준(월 금액)으로' : '총 계약금액을 개월 수로 나눈 월 금액으로'} 계산해 총 계약금액에서 빼고 나머지를 돌려준다. 계산한 금액이 총 계약금액 이상이면 돌려줄 금액은 없다.`,
+      '업무를 시작한 뒤 갑의 사정으로 해지하면, 이용이 끝난 기간(해지를 알린 날이 속한 달 포함)의 금액을 총 계약금액 ÷ 개월 수(월 금액)로 계산해 총 계약금액에서 빼고 나머지를 돌려준다.',
       '을의 사정으로 업무를 계속할 수 없으면, 을은 발행하지 못한 횟수만큼(총 계약금액 ÷ 총 발행 횟수 × 남은 횟수) 돌려준다.',
       '한쪽이 계약을 어기고 상대방이 고쳐 달라고 알린 뒤 7일 안에 고치지 않으면, 상대방은 계약을 해지할 수 있다.',
       '환불은 해지를 알린 날부터 7일 안에 갑의 계좌로 한다.'),

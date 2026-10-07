@@ -669,7 +669,7 @@
       f.appendChild(ask);
     }
     // 요금제: 고르면 기간·횟수·금액이 한 번에 채워짐
-    // list = 정상가(그 기간 원래 금액), total = 실제 받는 금액, ref = 중도 해지 정산 기준(1개월 금액)
+    // list = 정상가(그 기간 원래 금액), total = 실제 받는 금액 (중도 해지는 총 계약금액 ÷ 개월 수로 정산)
     var PLAN = {
       'ev-1': ['이벤트 · 월 20회 · 1개월 · 10만 원', 20, 1, 200000, 100000, 100000],
       'ev-2': ['이벤트 · 월 20회 · 2개월 · 20만 원', 20, 2, 360000, 200000, 100000],
@@ -695,7 +695,6 @@
     var tS = ctInput('date', v('testStart')), tE = ctInput('date', v('testEnd'));
     var pList = ctInput('text', v('priceList'), '예: 530000'); pList.inputMode = 'numeric';
     var pTot = ctInput('text', v('priceTotal'), '예: 250000'); pTot.inputMode = 'numeric';
-    var pRef = ctInput('text', v('priceRef', T && T.priceRegular ? T.priceRegular : ''), '예: 100000'); pRef.inputMode = 'numeric';
     var vat = ctSelect(['별도', '포함'], (T && T.vat) || '별도');
     var poM = ctInput('number', v('postsMonthly', 20)); poM.min = 1;
     var poT = ctInput('number', v('postsTotal')); poT.placeholder = '자동 계산';
@@ -712,7 +711,6 @@
     g.appendChild(ctField('테스트 기간 종료', tE));
     g.appendChild(ctField('총 계약금액 * (실제로 받는 금액)', pTot));
     g.appendChild(ctField('정상가 (이 기간 원래 금액)', pList, '총 계약금액보다 크면 계약서에 "정상가 → 할인 금액"이 같이 나와요. 할인이 없으면 비워두세요.'));
-    g.appendChild(ctField('중도 해지 정산 기준 (1개월 금액)', pRef, '중간에 그만둘 때 쓴 달을 이 금액으로 계산해요. 비워두면 총 계약금액 ÷ 개월 수로 계산해요.'));
     g.appendChild(ctField('부가세', vat));
     g.appendChild(ctField('월 발행 횟수 *', poM));
     g.appendChild(ctField('총 발행 횟수', poT));
@@ -745,7 +743,7 @@
     planSel.addEventListener('change', function () {
       var p = PLAN[planSel.value]; if (!p) return;
       poM.value = String(p[1]); months.value = String(p[2]);
-      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]); pRef.value = String(p[5]);
+      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]);
       poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
@@ -754,7 +752,7 @@
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
-        testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value), priceRef: digits(pRef.value),
+        testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
         vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
       sv.disabled = true; st.textContent = '저장하는 중…';
       (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
