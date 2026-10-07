@@ -31,7 +31,7 @@ function cleanTerms(b) {
     client: clip(b.client, 100), account: clip(b.account, 60).replace(/^@+/, ''),
     start: clip(b.start, 10), end: clip(b.end, 10), months: num(b.months, 60),
     testStart: clip(b.testStart, 10), testEnd: clip(b.testEnd, 10),
-    priceRegular: num(b.priceRegular, 1e9), priceMonthly: num(b.priceMonthly, 1e9), priceTotal: num(b.priceTotal, 1e10),
+    priceList: num(b.priceList, 1e10), priceTotal: num(b.priceTotal, 1e10), priceRef: num(b.priceRef, 1e9),
     vat: b.vat === '포함' ? '포함' : '별도',
     postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000),
     payment: clip(b.payment, 80) || '일시불 선결제', firstReport: clip(b.firstReport, 10),
@@ -53,11 +53,15 @@ function buildBody(t, our) {
     ['계약 기간', `${ymd(t.start)} ~ ${ymd(t.end)}${t.months ? ` (${t.months}개월)` : ''}`],
   ];
   if (t.testStart || t.testEnd) rows.push(['테스트 기간', `${ymd(t.testStart)} ~ ${ymd(t.testEnd)}`]);
-  if (t.priceRegular) rows.push(['정상 이용금액', `월 ${won(t.priceRegular)} (1개월 계약 금액)`]);
-  const disc = t.priceRegular && t.months ? t.priceRegular * t.months - t.priceTotal : 0;
-  if (disc > 0) rows.push(['기간 할인', `${won(disc)} (${t.months}개월 계약)`]);
-  rows.push(['계약 적용금액', `월 ${won(t.priceMonthly)}${t.months > 1 ? ' (총 계약금액 ÷ 개월 수)' : ''}`]);
+  // 예전 계약서(정상 이용금액·계약 적용금액)도 그대로 읽히게
+  const ref = t.priceRef || t.priceRegular || 0;
+  if (t.priceList && t.priceList > t.priceTotal) {
+    rows.push(['정상가', `${won(t.priceList)}${t.months ? ` (${t.months}개월)` : ''}`]);
+    rows.push(['할인 금액', won(t.priceList - t.priceTotal)]);
+  }
   rows.push(['총 계약금액', `${won(t.priceTotal)} (부가세 ${t.vat})`]);
+  if (t.months > 1) rows.push(['월 금액', `월 ${won(Math.round(t.priceTotal / t.months))} (총 계약금액 ÷ 개월 수)`]);
+  if (ref) rows.push(['중도 해지 정산 기준', `월 ${won(ref)} (1개월 금액)`]);
   rows.push(['발행 횟수', `월 ${t.postsMonthly}회${t.postsTotal ? `, 계약 기간 총 ${t.postsTotal}회` : ''}`]);
   rows.push(['결제 방식', t.payment]);
   if (our.account) rows.push(['입금 계좌', `${our.bank ? our.bank + ' ' : ''}${our.account}${our.holder ? ` (예금주 ${our.holder})` : ''}`]);
@@ -116,7 +120,7 @@ function buildBody(t, our) {
     P('갑과 을은 계약을 하며 알게 된 상대방의 계정 정보, 매출, 고객 정보, 계약 금액을 상대방 동의 없이 제3자에게 알리지 않는다. 이 의무는 계약이 끝난 뒤에도 유지된다.'),
     H('제14조 중도 해지와 환불'),
     OL('업무를 시작하기 전에 갑이 해지하면 을은 받은 금액을 전액 돌려준다.',
-      '업무를 시작한 뒤 갑의 사정으로 해지하면, 이용이 끝난 기간(해지를 알린 날이 속한 달 포함)의 금액을 뺀 나머지를 돌려준다. 여러 달 계약에 따른 할인이나 이벤트 금액이 적용된 경우, 이용이 끝난 기간은 제2조의 정상 이용금액(월)을 기준으로 정산한다.',
+      `업무를 시작한 뒤 갑의 사정으로 해지하면, 이용이 끝난 기간(해지를 알린 날이 속한 달 포함)의 금액을 ${(t.priceRef || t.priceRegular) ? '제2조의 중도 해지 정산 기준(월 금액)으로' : '총 계약금액을 개월 수로 나눈 월 금액으로'} 계산해 총 계약금액에서 빼고 나머지를 돌려준다. 계산한 금액이 총 계약금액 이상이면 돌려줄 금액은 없다.`,
       '을의 사정으로 업무를 계속할 수 없으면, 을은 발행하지 못한 횟수만큼(총 계약금액 ÷ 총 발행 횟수 × 남은 횟수) 돌려준다.',
       '한쪽이 계약을 어기고 상대방이 고쳐 달라고 알린 뒤 7일 안에 고치지 않으면, 상대방은 계약을 해지할 수 있다.',
       '환불은 해지를 알린 날부터 7일 안에 갑의 계좌로 한다.'),
@@ -184,6 +188,10 @@ function makePgStore(query) {
       return String(rows[0].id);
     },
     async remove(id) { const r = await query(`DELETE FROM ct_contracts WHERE id = $1`, [id]); return r.rowCount > 0; },
+    async updateTerms(id, terms, body) {
+      const r = await query(`UPDATE ct_contracts SET terms = $2, body = $3 WHERE id = $1 AND status = 'sent'`, [id, JSON.stringify(terms), JSON.stringify(body)]);
+      return r.rowCount > 0;
+    },
     async markViewed(token) { await query(`UPDATE ct_contracts SET viewed_at = now() WHERE token = $1 AND viewed_at IS NULL`, [token]); },
     async sign(token, s) {
       const r = await query(`UPDATE ct_contracts SET status = 'signed', signer = $2, client_sig = $3, signed_at = $4, signed_ip = $5, signed_ua = $6, doc_hash = $7,
@@ -216,6 +224,7 @@ function makeFileStore(dir) {
       d.items.push({ id, token: c.token, terms: c.terms, body: c.body, our: c.our, ourSig: b64(c.ourSig), status: 'sent', signer: null, signedAt: null, signedIp: '', docHash: '', viewedAt: null, createdAt: new Date().toISOString() });
       write(d); return id;
     },
+    async updateTerms(id, terms, body) { const d = read(); const c = d.items.find((x) => x.id === String(id)); if (!c || c.status !== 'sent') return false; c.terms = terms; c.body = body; write(d); return true; },
     async remove(id) { const d = read(); const n = d.items.length; d.items = d.items.filter((x) => x.id !== String(id)); write(d); return d.items.length !== n; },
     async markViewed(token) { const d = read(); const c = d.items.find((x) => x.token === token); if (c && !c.viewedAt) { c.viewedAt = new Date().toISOString(); write(d); } },
     async sign(token, s) {
@@ -251,7 +260,11 @@ function bodyHtml(c) {
     if (b.t === 'h') { html += `${inSec ? '</section>' : ''}<section class="ct-sec"><h2>${esc(b.x)}</h2>`; inSec = true; continue; }
     if (b.t === 'p') html += `<p>${esc(b.x)}</p>`;
     else if (b.t === 'ol') html += `<ol>${b.items.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>`;
-    else if (b.t === 'table') html += `<table class="ct-table"><tbody>${b.rows.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
+    else if (b.t === 'table') {
+      const acc = c.our && c.our.account ? c.our.account.replace(/[^0-9-]/g, '') : '';
+      const copyBtn = (k) => (k === '입금 계좌' && acc ? ` <button type="button" class="ct-copy" data-copy="${esc(acc)}">계좌번호 복사</button>` : '');
+      html += `<table class="ct-table"><tbody>${b.rows.map((r) => `<tr><th scope="row">${esc(r[0])}</th><td>${esc(r[1])}${copyBtn(r[0])}</td></tr>`).join('')}</tbody></table>`;
+    }
     else if (b.t === 'consent') {
       const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : '서명할 때 갑이 선택';
       html += `<p class="ct-consent">포트폴리오 활용 동의: <b>${esc(v)}</b></p>`;
@@ -278,7 +291,7 @@ function payBox(c) {
   return `<div class="ct-pay"><p class="ct-pay-h">입금 안내</p>
 <p class="ct-pay-amt">총 ${esc(won(c.terms.priceTotal))} <small>(부가세 ${esc(c.terms.vat)})</small></p>
 <p class="ct-pay-acc"><b>${esc(acc)}</b>${o.holder ? ` · 예금주 ${esc(o.holder)}` : ''}</p>
-<button type="button" class="btn btn-outline btn-sm" id="ctCopyAcc" data-acc="${esc(o.account.replace(/[^0-9-]/g, ''))}">계좌번호 복사</button>
+<button type="button" class="btn btn-outline btn-sm" data-copy="${esc(o.account.replace(/[^0-9-]/g, ''))}">계좌번호 복사</button>
 <p class="ct-tip">입금이 확인되면 운영을 시작해요 (제6조).</p></div>`;
 }
 function renderPage(tpl, c, { token, admin, ua = '' }) {
@@ -524,7 +537,7 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
     app.post('/api/admin/contracts', requireAdmin, express.json({ limit: '20kb' }), async (req, res) => {
       const t = cleanTerms(req.body);
       if (!t.start || !t.end) return fail(res, 400, '계약 기간을 적어주세요.');
-      if (!t.priceMonthly || !t.priceTotal) return fail(res, 400, '금액을 적어주세요.');
+      if (!t.priceTotal) return fail(res, 400, '총 계약금액을 적어주세요.');
       if (!t.postsMonthly) return fail(res, 400, '월 발행 횟수를 적어주세요.');
       try {
         const our = await getOur();
@@ -532,6 +545,16 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const id = await store.create({ token, terms: t, body: buildBody(t, our), our, ourSig: await getOurSig() });
         res.json({ ok: true, id, url: `${req.protocol}://${req.get("host")}/c/${token}` });
       } catch (e) { console.error('[ct create]', e.message); fail(res, 500, '계약서를 만들지 못했어요.'); }
+    });
+    app.put('/api/admin/contracts/:id(\\d+)', requireAdmin, express.json({ limit: '20kb' }), async (req, res) => {
+      const t = cleanTerms(req.body);
+      if (!t.start || !t.end) return fail(res, 400, '계약 기간을 적어주세요.');
+      if (!t.priceTotal) return fail(res, 400, '총 계약금액을 적어주세요.');
+      if (!t.postsMonthly) return fail(res, 400, '월 발행 횟수를 적어주세요.');
+      try {
+        const ok = await store.updateTerms(req.params.id, t, buildBody(t, await getOur()));
+        return ok ? res.json({ ok: true }) : fail(res, 409, '이미 서명이 끝났거나 없는 계약서예요.');
+      } catch (e) { console.error('[ct edit]', e.message); fail(res, 500, '저장하지 못했어요.'); }
     });
     app.delete('/api/admin/contracts/:id(\\d+)', requireAdmin, async (req, res) => {
       try { const ok = await store.remove(req.params.id); res.status(ok ? 200 : 404).json({ ok }); }

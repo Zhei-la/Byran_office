@@ -548,9 +548,12 @@
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { window.prompt('길게 눌러 복사하세요', t); })
       .then(function () { setTimeout(function () { if (btn.isConnected) btn.textContent = label; }, 1800); });
   }
-  function ctMsg(url) {
-    return '계약서 보내드려요\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 돼요\n서명하시면 계약서를 PDF로 저장하실 수 있어요\n' + url;
+  function ctMsg(url, total) {
+    var o = ctData.our || {};
+    var acc = o.account ? '\n\n입금 계좌\n' + (o.bank ? o.bank + ' ' : '') + o.account + (o.holder ? ' (예금주 ' + o.holder + ')' : '') + (total ? '\n입금 금액 ' + Number(total).toLocaleString('ko-KR') + '원' : '') : '';
+    return '계약서 보내드려요\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 돼요\n서명하시면 계약서를 PDF로 저장하실 수 있어요\n' + url + acc;
   }
+  function accOnly() { var o = ctData.our || {}; return o.account ? o.account.replace(/[^0-9-]/g, '') : ''; }
   function won(n) { return n ? Number(n).toLocaleString('ko-KR') + '원' : '-'; }
   function ctList(flash, created) {
     ctBox.textContent = ''; ctBox.appendChild(el('p', 'adm-none', '계약서를 불러오는 중이에요…'));
@@ -560,7 +563,7 @@
   function ctRender(flash, created) {
     ctBox.textContent = '';
     var bar = el('div', 'pfa-bar');
-    var add = button('+ 새 계약서', 'btn btn-ink'); add.addEventListener('click', ctNew);
+    var add = button('+ 새 계약서', 'btn btn-ink'); add.addEventListener('click', function () { ctNew(); });
     var our = button('우리 정보·서명'); our.addEventListener('click', ctOur);
     bar.appendChild(add); bar.appendChild(our); ctBox.appendChild(bar);
     if (!ctData.hasOurSig) {
@@ -574,12 +577,15 @@
       var box = el('div', 'ct-made');
       box.appendChild(el('h3', null, '서명 링크가 만들어졌어요'));
       box.appendChild(el('p', 'pfa-hint', '아래 문구를 복사해서 고객 카톡으로 보내주세요. 고객이 서명하면 이 목록에 "서명 완료"로 바뀌어요.'));
-      var pre = el('pre', 'ct-pre', ctMsg(created)); box.appendChild(pre);
+      var ci = (ctData.items || []).filter(function (x) { return x.url === created; })[0], ctot = ci && ci.terms ? ci.terms.priceTotal : 0;
+      var pre = el('pre', 'ct-pre', ctMsg(created, ctot)); box.appendChild(pre);
       var acts = el('div', 'pfa-adds');
-      var cm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); cm.addEventListener('click', function () { copyText(ctMsg(created), cm, '카톡 문구 복사'); });
+      var cm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); cm.addEventListener('click', function () { copyText(ctMsg(created, ctot), cm, '카톡 문구 복사'); });
       var cl = button('링크만 복사'); cl.addEventListener('click', function () { copyText(created, cl, '링크만 복사'); });
       var op = el('a', 'btn btn-outline btn-sm', '계약서 열어보기'); op.href = created; op.target = '_blank'; op.rel = 'noopener';
-      acts.appendChild(cm); acts.appendChild(cl); acts.appendChild(op); box.appendChild(acts);
+      acts.appendChild(cm); acts.appendChild(cl);
+      if (accOnly()) { var ca = button('계좌번호만 복사'); ca.addEventListener('click', function () { copyText(accOnly(), ca, '계좌번호만 복사'); }); acts.appendChild(ca); }
+      acts.appendChild(op); box.appendChild(acts);
       ctBox.appendChild(box);
     }
     var items = ctData.items || [];
@@ -606,12 +612,14 @@
       var op = el('a', 'btn btn-ink btn-sm', signed ? '계약서 보기' : '열어보기'); op.href = c.url; op.target = '_blank'; op.rel = 'noopener';
       act.appendChild(op);
       if (signed) { var pdf = el('a', 'btn btn-outline btn-sm', 'PDF 받기'); pdf.href = c.url + '/contract.pdf'; act.appendChild(pdf); }
+      if (!signed) { var edb = button('수정'); edb.addEventListener('click', function () { ctNew(c); }); act.appendChild(edb); }
       if (!signed) {
-        var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url), cm, '카톡 문구 복사'); });
+        var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url, t.priceTotal), cm, '카톡 문구 복사'); });
         act.appendChild(cm);
       }
       var cl = button('링크 복사'); cl.addEventListener('click', function () { copyText(c.url, cl, '링크 복사'); });
       act.appendChild(cl);
+      if (accOnly()) { var cac = button('계좌번호 복사'); cac.addEventListener('click', function () { copyText(accOnly(), cac, '계좌번호 복사'); }); act.appendChild(cac); }
       var del = button('삭제', 'btn btn-outline btn-sm adm-del');
       del.addEventListener('click', function () {
         if (!del.dataset.armed) {
@@ -645,40 +653,55 @@
   function parseD(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
   function digits(s) { return parseInt(String(s || '').replace(/[^\d]/g, ''), 10) || 0; }
 
-  function ctNew() {
+  function ctNew(src) {
+    var T = (src && src.terms) || null; // 수정이면 기존 조건
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
-    f.appendChild(ctHead('새 계약서'));
-    f.appendChild(el('p', 'pfa-hint', '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
-    // 기간을 아직 모를 때: 고객에게 먼저 물어보는 문구 (시작일은 아래 시작일 칸 기준)
-    var ask = el('div', 'ct-made ct-ask');
-    ask.appendChild(el('h3', null, '기간을 아직 모를 때 · 고객에게 먼저 물어보기'));
-    var askPre = el('pre', 'ct-pre'); ask.appendChild(askPre);
-    var askCp = button('문구 복사', 'btn btn-ink btn-sm'); ask.appendChild(askCp);
-    f.appendChild(ask);
-    // 요금제 고르면 금액·횟수·개월 수가 한 번에 채워짐 (스레드 요금표 기준)
-    var PLANS = [['', '직접 입력'],
-      ['ev-1', '이벤트 · 월 20회 · 1개월 · 10만 원'], ['ev-2', '이벤트 · 월 20회 · 2개월 · 20만 원'], ['ev-3', '이벤트 · 월 20회 · 3개월 · 25만 원'],
-      ['20-1', '월 20회 · 1개월 · 20만 원'], ['20-2', '월 20회 · 2개월 · 36만 원'], ['20-3', '월 20회 · 3개월 · 53만 원'],
-      ['35-1', '월 35회 · 1개월 · 28만 원'], ['35-2', '월 35회 · 2개월 · 52만 원'], ['35-3', '월 35회 · 3개월 · 77만 원']];
-    var PLAN_TOTAL = { 'ev-1': 100000, 'ev-2': 200000, 'ev-3': 250000, '20-1': 200000, '20-2': 360000, '20-3': 530000, '35-1': 280000, '35-2': 520000, '35-3': 770000 };
-    var planSel = el('select'); PLANS.forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; planSel.appendChild(x); });
-    var pg = el('div', 'pfa-grid'); pg.appendChild(ctField('요금제', planSel, '고르면 아래 금액·횟수·개월 수가 자동으로 채워져요. 고칠 수도 있어요.', true)); f.appendChild(pg);
+    f.appendChild(ctHead(T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(el('p', 'pfa-hint', T ? '고객이 서명하기 전이라 고칠 수 있어요. 저장하면 보냈던 링크에도 바로 반영돼요.' : '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
+    var askPre = null, askCp = null;
+    if (!T) {
+      // 기간을 아직 모를 때: 고객에게 먼저 물어보는 문구 (시작일은 아래 시작일 칸 기준)
+      var ask = el('div', 'ct-made ct-ask');
+      ask.appendChild(el('h3', null, '기간을 아직 모를 때 · 고객에게 먼저 물어보기'));
+      askPre = el('pre', 'ct-pre'); ask.appendChild(askPre);
+      askCp = button('문구 복사', 'btn btn-ink btn-sm'); ask.appendChild(askCp);
+      f.appendChild(ask);
+    }
+    // 요금제: 고르면 기간·횟수·금액이 한 번에 채워짐
+    // list = 정상가(그 기간 원래 금액), total = 실제 받는 금액, ref = 중도 해지 정산 기준(1개월 금액)
+    var PLAN = {
+      'ev-1': ['이벤트 · 월 20회 · 1개월 · 10만 원', 20, 1, 200000, 100000, 100000],
+      'ev-2': ['이벤트 · 월 20회 · 2개월 · 20만 원', 20, 2, 360000, 200000, 100000],
+      'ev-3': ['이벤트 · 월 20회 · 3개월 · 25만 원', 20, 3, 530000, 250000, 100000],
+      '20-1': ['월 20회 · 1개월 · 20만 원', 20, 1, 200000, 200000, 200000],
+      '20-2': ['월 20회 · 2개월 · 36만 원', 20, 2, 400000, 360000, 200000],
+      '20-3': ['월 20회 · 3개월 · 53만 원', 20, 3, 600000, 530000, 200000],
+      '35-1': ['월 35회 · 1개월 · 28만 원', 35, 1, 280000, 280000, 280000],
+      '35-2': ['월 35회 · 2개월 · 52만 원', 35, 2, 560000, 520000, 280000],
+      '35-3': ['월 35회 · 3개월 · 77만 원', 35, 3, 840000, 770000, 280000]
+    };
+    var planSel = el('select'); var o0 = el('option', null, T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
+    Object.keys(PLAN).forEach(function (k) { var x = el('option', null, PLAN[k][0]); x.value = k; planSel.appendChild(x); });
+    var pg = el('div', 'pfa-grid'); pg.appendChild(ctField('요금제', planSel, '고르면 기간·횟수·금액이 자동으로 채워져요. 이벤트가처럼 다르게 받을 땐 총 계약금액만 고치면 돼요.', true)); f.appendChild(pg);
     var g = el('div', 'pfa-grid');
-    var client = ctInput('text', '', '예: 행컵 안산한양대점'); client.maxLength = 100;
-    var account = ctInput('text', '', '예: hangcup_ansan (@ 없이)'); account.maxLength = 60;
-    var nm0 = new Date(); var start = ctInput('date', iso(new Date(nm0.getFullYear(), nm0.getMonth() + 1, 1))); var months = ctInput('number', '1'); months.min = 1; months.max = 60;
-    var end = ctInput('date');
-    var tS = ctInput('date'), tE = ctInput('date');
-    var pReg = ctInput('text', '', '예: 200000'); pReg.inputMode = 'numeric';
-    var pMon = ctInput('text', '', '예: 150000'); pMon.inputMode = 'numeric';
-    var pTot = ctInput('text', '', '자동 계산 (고칠 수 있어요)'); pTot.inputMode = 'numeric';
-    var vat = ctSelect(['별도', '포함'], '별도');
-    var poM = ctInput('number', '30'); poM.min = 1;
-    var poT = ctInput('number', ''); poT.placeholder = '자동 계산';
-    var pay = ctSelect(['일시불 선결제', '매월 선결제'], '일시불 선결제');
-    var rep = ctInput('date');
-    var rev = ctInput('number', '2'); rev.min = 1; rev.max = 10;
+    var v = function (k, d) { return T && T[k] != null && T[k] !== 0 && T[k] !== '' ? String(T[k]) : (d == null ? '' : String(d)); };
+    var client = ctInput('text', v('client'), '예: 행컵 안산한양대점'); client.maxLength = 100;
+    var account = ctInput('text', v('account'), '예: hangcup_ansan (@ 없이)'); account.maxLength = 60;
+    var nm0 = new Date();
+    var start = ctInput('date', v('start', iso(new Date(nm0.getFullYear(), nm0.getMonth() + 1, 1))));
+    var months = ctInput('number', v('months', 1)); months.min = 1; months.max = 60;
+    var end = ctInput('date', v('end'));
+    var tS = ctInput('date', v('testStart')), tE = ctInput('date', v('testEnd'));
+    var pList = ctInput('text', v('priceList'), '예: 530000'); pList.inputMode = 'numeric';
+    var pTot = ctInput('text', v('priceTotal'), '예: 250000'); pTot.inputMode = 'numeric';
+    var pRef = ctInput('text', v('priceRef', T && T.priceRegular ? T.priceRegular : ''), '예: 100000'); pRef.inputMode = 'numeric';
+    var vat = ctSelect(['별도', '포함'], (T && T.vat) || '별도');
+    var poM = ctInput('number', v('postsMonthly', 20)); poM.min = 1;
+    var poT = ctInput('number', v('postsTotal')); poT.placeholder = '자동 계산';
+    var pay = ctSelect(['일시불 선결제', '매월 선결제'], (T && T.payment) || '일시불 선결제');
+    var rep = ctInput('date', v('firstReport'));
+    var rev = ctInput('number', v('revisions', 2)); rev.min = 1; rev.max = 10;
     g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
     g.appendChild(ctField('스레드 계정', account, '모르면 비워두기 → 고객이 직접 입력'));
     g.appendChild(ctField('시작일 *', start));
@@ -687,55 +710,58 @@
     g.appendChild(ctField('첫 주간 보고일', rep, '시작하고 첫 화요일로 자동으로 채워져요.'));
     g.appendChild(ctField('테스트 기간 시작 (없으면 비워두기)', tS));
     g.appendChild(ctField('테스트 기간 종료', tE));
-    g.appendChild(ctField('정상 이용금액 (월, 할인 전)', pReg, '할인해서 계약할 때 적어두면 중도 해지 정산 기준이 돼요.'));
-    g.appendChild(ctField('계약 적용금액 (월) *', pMon));
-    g.appendChild(ctField('총 계약금액 *', pTot));
+    g.appendChild(ctField('총 계약금액 * (실제로 받는 금액)', pTot));
+    g.appendChild(ctField('정상가 (이 기간 원래 금액)', pList, '총 계약금액보다 크면 계약서에 "정상가 → 할인 금액"이 같이 나와요. 할인이 없으면 비워두세요.'));
+    g.appendChild(ctField('중도 해지 정산 기준 (1개월 금액)', pRef, '중간에 그만둘 때 쓴 달을 이 금액으로 계산해요. 비워두면 총 계약금액 ÷ 개월 수로 계산해요.'));
     g.appendChild(ctField('부가세', vat));
     g.appendChild(ctField('월 발행 횟수 *', poM));
     g.appendChild(ctField('총 발행 횟수', poT));
     g.appendChild(ctField('결제 방식', pay));
     g.appendChild(ctField('수정 횟수 (글 한 건당)', rev));
     f.appendChild(g);
-    var totTouched = false, poTouched = false;
-    pTot.addEventListener('input', function () { totTouched = true; }); poT.addEventListener('input', function () { poTouched = true; });
+    var poTouched = !!(T && T.postsTotal);
+    poT.addEventListener('input', function () { poTouched = true; });
     function auto() {
       var n = Math.max(1, digits(months.value)), sd = parseD(start.value);
       if (sd) {
         var e = new Date(sd.getFullYear(), sd.getMonth() + n, sd.getDate() - 1); end.value = iso(e);
         var r = new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() + 6); while (r.getDay() !== 2) r.setDate(r.getDate() + 1); rep.value = iso(r);
       }
-      if (!totTouched && digits(pMon.value)) pTot.value = String(digits(pMon.value) * n);
       if (!poTouched && digits(poM.value)) poT.value = String(digits(poM.value) * n);
     }
-    [start, months, pMon, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
-    function askText() {
-      var sd = parseD(start.value);
-      var when = sd ? (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일' : '11월';
-      return '계정 대행 운영은 ' + when + '부터 시작됩니다\n\n진행 기간 선택 해주세요! (1개월 10만 원 / 2개월 20만 원 / 3개월 25만 원) - \n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 됩니다 :)';
+    [start, months, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
+    if (askPre) {
+      var askText = function () {
+        var sd = parseD(start.value);
+        var when = sd ? (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일' : '11월';
+        return '계정 대행 운영은 ' + when + '부터 시작됩니다\n\n진행 기간 선택 해주세요! (1개월 10만 원 / 2개월 20만 원 / 3개월 25만 원) - \n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 됩니다 :)';
+      };
+      var updAsk = function () { askPre.textContent = askText(); };
+      start.addEventListener('input', updAsk); start.addEventListener('change', updAsk);
+      askCp.addEventListener('click', function () { copyText(askText(), askCp, '문구 복사'); });
+      updAsk();
     }
-    function updAsk() { askPre.textContent = askText(); }
-    start.addEventListener('input', updAsk); start.addEventListener('change', updAsk);
-    askCp.addEventListener('click', function () { copyText(askText(), askCp, '문구 복사'); });
-    updAsk(); auto();
+    if (!T) auto();
     planSel.addEventListener('change', function () {
-      var k = planSel.value; if (!k) return;
-      var grp = k.split('-')[0], n = +k.split('-')[1], tot = PLAN_TOTAL[k], cnt = grp === 'ev' ? 20 : +grp;
-      months.value = String(n); poM.value = String(cnt);
-      pReg.value = String(PLAN_TOTAL[grp + '-1']); pTot.value = String(tot); pMon.value = String(Math.round(tot / n));
-      totTouched = true; poTouched = false; auto();
+      var p = PLAN[planSel.value]; if (!p) return;
+      poM.value = String(p[1]); months.value = String(p[2]);
+      pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]); pRef.value = String(p[5]);
+      poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
-    var sv = el('button', 'btn btn-ink', '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var sv = el('button', 'btn btn-ink', T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
     var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
-        testStart: tS.value, testEnd: tE.value, priceRegular: digits(pReg.value), priceMonthly: digits(pMon.value), priceTotal: digits(pTot.value),
+        testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value), priceRef: digits(pRef.value),
         vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
-      sv.disabled = true; st.textContent = '만드는 중…';
-      api('POST', '/api/admin/contracts', body).then(function (j) { ctList(null, j.url); }, function (err) {
+      sv.disabled = true; st.textContent = '저장하는 중…';
+      (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+        if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
+      }, function (err) {
         sv.disabled = false; if (err && err.message === 'auth') return;
-        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '만들지 못했어요. 잠시 후 다시 시도해 주세요.';
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
       });
     });
     ctBox.appendChild(f);
