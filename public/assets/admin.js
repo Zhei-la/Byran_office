@@ -603,8 +603,9 @@
       }
       row.appendChild(info);
       var act = el('div', 'pfa-act');
-      var op = el('a', 'btn btn-ink btn-sm', signed ? '계약서 보기 · PDF' : '열어보기'); op.href = c.url; op.target = '_blank'; op.rel = 'noopener';
+      var op = el('a', 'btn btn-ink btn-sm', signed ? '계약서 보기' : '열어보기'); op.href = c.url; op.target = '_blank'; op.rel = 'noopener';
       act.appendChild(op);
+      if (signed) { var pdf = el('a', 'btn btn-outline btn-sm', 'PDF 받기'); pdf.href = c.url + '/contract.pdf'; act.appendChild(pdf); }
       if (!signed) {
         var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url), cm, '카톡 문구 복사'); });
         act.appendChild(cm);

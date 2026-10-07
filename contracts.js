@@ -265,15 +265,24 @@ ${rows.map((r) => `<tr><th scope="row">${r[0]}</th><td>${cell(r[1])}</td><td>${e
 <tr class="ct-sigrow"><th scope="row">서명</th><td>${sigImg('client', c.status === 'signed')}</td><td>${sigImg('our', c.hasOurSig)}</td></tr>
 </tbody></table>`;
 }
-function renderPage(tpl, c, { token, admin }) {
+function renderPage(tpl, c, { token, admin, ua = '' }) {
   const signed = c.status === 'signed';
   const title = `스레드 운영 대행 계약서 · ${c.terms.client || ''}`;
   let foot = '';
   if (signed) {
+    const pdfUrl = `/c/${esc(token)}/contract.pdf`;
+    const pageUrl = `https://byranmk.com/c/${token}`;
+    let inapp = '';
+    if (/KAKAOTALK/i.test(ua)) {
+      inapp = `<p class="ct-tip">카카오톡 안에서는 파일 저장이 안 될 수 있어요. 안 되면 아래 버튼으로 크롬·삼성인터넷에서 열어주세요.</p>
+<div class="ct-actions"><a class="btn btn-outline" href="kakaotalk://web/openExternal?url=${encodeURIComponent(pageUrl)}">다른 브라우저로 열기</a></div>`;
+    } else if (/Instagram|Barcelona|FBAN|FBAV|NAVER\(inapp|Line\//i.test(ua)) {
+      inapp = '<p class="ct-tip">앱 안 브라우저에서는 파일 저장이 안 될 수 있어요. 안 되면 오른쪽 위 메뉴(⋯)에서 <b>다른 브라우저로 열기</b>를 눌러주세요.</p>';
+    }
     foot = `<div class="ct-done"><p class="ct-done-h">서명이 끝난 계약서예요</p>
-<p>전자서명 일시 ${esc(kst(c.signedAt))} (한국 시간) · 문서 확인번호 ${esc((c.docHash || '').slice(0, 16).toUpperCase().replace(/(.{4})(?=.)/g, '$1-'))}</p>
-<div class="ct-actions"><button type="button" class="btn btn-ink" id="ctPrint">PDF로 저장 · 인쇄</button></div>
-<p class="ct-tip">휴대폰에서는 "PDF로 저장 · 인쇄"를 누른 뒤 프린터를 <b>PDF로 저장</b>으로 고르면 파일로 저장돼요.</p></div>`;
+<p>전자서명 일시 ${esc(kst(c.signedAt))} (한국 시간) · 문서 확인번호 ${esc(hashLabel(c.docHash))}</p>
+<div class="ct-actions"><a class="btn btn-ink" href="${pdfUrl}" download>PDF 파일 받기</a><button type="button" class="btn btn-outline" id="ctPrint">인쇄</button></div>
+${inapp}</div>`;
   } else if (admin) {
     foot = `<div class="ct-admin-note"><p><b>관리자 화면이에요.</b> 고객이 이 주소를 열면 이 자리에 업체 정보 입력 칸과 서명 칸이 나와요. 여기서는 서명하지 않아요.</p></div>`;
   } else {
@@ -303,6 +312,94 @@ function renderPage(tpl, c, { token, admin }) {
   return tpl.replace(/\{\{([A-Z0-9_]+)\}\}/g, (m, k) => (k in vars ? vars[k] : m));
 }
 
+
+/* ---------------- PDF 파일 (서버에서 바로 만듦 — 카톡 안 브라우저처럼 인쇄가 안 되는 곳에서도 받을 수 있게) ---------------- */
+const hashLabel = (h) => (h || '').slice(0, 16).toUpperCase().replace(/(.{4})(?=.)/g, '$1-');
+function buildPdf(c, sigs, fontDir) {
+  const PDFDocument = require('pdfkit');
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 54, bottom: 54, left: 52, right: 52 }, info: { Title: `스레드 운영 대행 계약서 - ${c.terms.client}`, Author: c.our.name || '바이란미디어' } });
+    const out = []; doc.on('data', (d) => out.push(d)); doc.on('end', () => resolve(Buffer.concat(out))); doc.on('error', reject);
+    doc.registerFont('R', path.join(fontDir, 'NanumGothic-Regular.ttf'));
+    doc.registerFont('B', path.join(fontDir, 'NanumGothic-Bold.ttf'));
+    const L = doc.page.margins.left, W = doc.page.width - L - doc.page.margins.right;
+    const bottom = () => doc.page.height - doc.page.margins.bottom;
+    const room = (h) => { if (doc.y + h > bottom()) doc.addPage(); };
+    const para = (txt, o = {}) => { doc.font(o.bold ? 'B' : 'R').fontSize(o.size || 10).fillColor(o.color || '#1b1d1b'); room(doc.heightOfString(txt, { width: o.width || W, lineGap: 3 })); doc.text(txt, o.x || L, doc.y, { width: o.width || W, lineGap: 3, align: o.align || 'left' }); };
+
+    // 제목
+    doc.font('B').fontSize(9).fillColor('#8a6d45').text('전자계약서', L, doc.y, { width: W, align: 'center', characterSpacing: 1 });
+    doc.moveDown(0.7);
+    doc.font('B').fontSize(20).fillColor('#141614').text('스레드 운영 대행 계약서', { width: W, align: 'center' });
+    doc.moveDown(0.3);
+    doc.font('R').fontSize(9.5).fillColor('#666').text(`${c.terms.client} · 작성일 ${kst(c.createdAt).slice(0, 10)}`, { width: W, align: 'center' });
+    doc.moveDown(0.8);
+    doc.moveTo(L, doc.y).lineTo(L + W, doc.y).lineWidth(1.5).strokeColor('#141614').stroke();
+    doc.moveDown(1);
+
+    // 표 그리기 (행마다 높이 계산, 페이지 넘김)
+    function table(rows, cols, opt = {}) {
+      const pad = 6;
+      rows.forEach((r, ri) => {
+        const isHead = opt.head && ri === 0;
+        const hs = r.map((cell, ci) => (cell && cell.img ? (opt.imgH || 56) : doc.font(ci === 0 || isHead ? 'B' : 'R').fontSize(9.5).heightOfString(String(cell == null ? '' : cell), { width: cols[ci] - pad * 2, lineGap: 2 })));
+        const h = Math.max(...hs) + pad * 2;
+        room(h);
+        let x = L; const y = doc.y;
+        r.forEach((cell, ci) => {
+          const w = cols[ci];
+          if (ci === 0 || isHead) doc.rect(x, y, w, h).fillColor('#f2f1ec').fill();
+          doc.rect(x, y, w, h).lineWidth(0.6).strokeColor('#c9cac0').stroke();
+          if (cell && cell.img) {
+            try { doc.image(cell.img, x + pad, y + pad, { fit: [w - pad * 2, h - pad * 2], align: 'center', valign: 'center' }); } catch (e) { /* 이미지 오류 무시 */ }
+          } else {
+            doc.font(ci === 0 || isHead ? 'B' : 'R').fontSize(9.5).fillColor(cell && cell.muted ? '#999' : '#1b1d1b')
+              .text(String(cell && cell.muted ? cell.muted : (cell == null ? '' : cell)), x + pad, y + pad, { width: w - pad * 2, lineGap: 2, align: isHead ? 'center' : 'left' });
+          }
+          x += w;
+        });
+        doc.x = L; doc.y = y + h;
+      });
+      doc.moveDown(0.6);
+    }
+
+    for (const b of c.body) {
+      if (b.t === 'h') { doc.moveDown(0.5); room(40); para(b.x, { bold: true, size: 11.5 }); doc.moveDown(0.25); }
+      else if (b.t === 'p') { para(b.x); doc.moveDown(0.3); }
+      else if (b.t === 'ol') {
+        b.items.forEach((it, i) => {
+          doc.font('R').fontSize(10);
+          const h = doc.heightOfString(it, { width: W - 18, lineGap: 3 }); room(h);
+          const y = doc.y;
+          doc.fillColor('#1b1d1b').text(`${i + 1}.`, L, y, { width: 18 });
+          doc.text(it, L + 18, y, { width: W - 18, lineGap: 3 });
+          doc.moveDown(0.2);
+        });
+        doc.moveDown(0.2);
+      } else if (b.t === 'table') { doc.moveDown(0.2); table(b.rows, [W * 0.26, W * 0.74]); }
+      else if (b.t === 'consent') {
+        const v = c.signer ? (c.signer.consent === 'yes' ? '동의' : '동의하지 않음') : '서명할 때 갑이 선택';
+        para(`포트폴리오 활용 동의: ${v}`, { bold: true }); doc.moveDown(0.3);
+      }
+    }
+
+    // 서명 표
+    const s = c.signer || {}, o = c.our || {}, pending = { muted: '서명 전' };
+    const rows = [['구분', '갑 (고객)', '을 (대행사)'], ['상호', s.name || c.terms.client, o.name || '-'], ['대표자', s.ceo || pending, o.ceo || '-'],
+      ['사업자등록번호', c.signer ? (s.bizno || '-') : pending, o.bizno || '-'], ['주소', s.addr || pending, o.addr || '-'], ['연락처', s.phone || pending, o.phone || '-'],
+      ['서명', sigs.client ? { img: sigs.client } : pending, sigs.our ? { img: sigs.our } : { muted: '-' }]];
+    doc.moveDown(0.3);
+    table(rows, [W * 0.2, W * 0.4, W * 0.4], { head: true, imgH: 60 });
+    room(40);
+    if (c.status === 'signed') {
+      para(`전자서명 일시 ${kst(c.signedAt)} (한국 시간) · 문서 확인번호 ${hashLabel(c.docHash)}`, { size: 8.5, color: '#555' });
+    } else {
+      para('아직 갑(고객)의 서명이 끝나지 않은 계약서예요.', { size: 8.5, color: '#9a3b25' });
+    }
+    doc.end();
+  });
+}
+
 /* ---------------- 라우트 ---------------- */
 module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer, prod, root }) {
   const store = query ? makePgStore(query) : makeFileStore(path.join(root, 'data'));
@@ -326,8 +423,22 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const admin = isAdmin(req);
         if (!admin) store.markViewed(token).catch(() => {});
         res.set({ 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer', 'X-Robots-Tag': 'noindex, nofollow' });
-        res.type('html').send(renderPage(tpl(), c, { token, admin }));
+        res.type('html').send(renderPage(tpl(), c, { token, admin, ua: req.get('user-agent') || '' }));
       } catch (e) { console.error('[ct page]', e.message); next(); }
+    });
+    app.get('/c/:token/contract.pdf', async (req, res, next) => {
+      const token = req.params.token;
+      if (!TOKEN_RE.test(token)) return next();
+      try {
+        const c = await store.byToken(token);
+        if (!c) return next();
+        const sigs = { our: await store.sig(token, 'our'), client: c.status === 'signed' ? await store.sig(token, 'client') : null };
+        const buf = await buildPdf(c, sigs, path.join(root, 'fonts'));
+        const name = `스레드운영대행계약서_${(c.terms.client || '').replace(/[\\/:*?"<>|\s]+/g, '_')}.pdf`;
+        res.set({ 'Content-Type': 'application/pdf', 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex',
+          'Content-Disposition': `${req.query.view ? 'inline' : 'attachment'}; filename="contract.pdf"; filename*=UTF-8''${encodeURIComponent(name)}` });
+        res.send(buf);
+      } catch (e) { console.error('[ct pdf]', e.message); res.status(500).type('text').send('PDF를 만들지 못했어요. 잠시 후 다시 시도해 주세요.'); }
     });
     app.get('/c/:token/sig/:who(our|client).png', async (req, res, next) => {
       if (!TOKEN_RE.test(req.params.token)) return next();

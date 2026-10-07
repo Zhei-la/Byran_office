@@ -8,10 +8,13 @@
     "start": "node server.js",
     "dev": "node --watch server.js"
   },
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "express": "^4.21.2",
     "helmet": "^7.2.0",
+    "pdfkit": "^0.17.2",
     "pg": "^8.13.1"
   }
 }
