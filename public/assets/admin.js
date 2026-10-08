@@ -555,6 +555,25 @@
   }
   function accOnly() { var o = ctData.our || {}; return o.account ? o.account.replace(/[^0-9-]/g, '') : ''; }
   function won(n) { return n ? Number(n).toLocaleString('ko-KR') + '원' : '-'; }
+  // 노션·관리표 정리용 요약 (채팅에 붙여 넣으면 Claude가 이걸로 노션 고객 목록과 발행 관리표를 채운다)
+  function ctSummary(c) {
+    var t = c.terms || {}, sg = c.signer || {}, signed = c.status === 'signed';
+    var base = t.postsTotal || 0, bonus = t.postsBonus || 0;
+    var L = ['[계약서] ' + (sg.name || t.client || '상호 미입력') + (signed ? ' · 서명 완료 ' + fmtDate(c.signedAt) : ' · 서명 대기')];
+    if (sg.ceo) L.push('대표자 ' + sg.ceo);
+    if (sg.phone) L.push('연락처 ' + sg.phone);
+    if (sg.bizno) L.push('사업자번호 ' + sg.bizno);
+    L.push('스레드 계정 ' + (t.account ? '@' + t.account : (sg.account ? '@' + String(sg.account).replace(/^@+/, '') : '미입력')));
+    L.push('계약 기간 ' + (t.start || '') + ' ~ ' + (t.end || '') + (t.months ? ' (' + t.months + '개월)' : ''));
+    if (t.testStart || t.testEnd) L.push('테스트 기간 ' + (t.testStart || '') + ' ~ ' + (t.testEnd || ''));
+    L.push('총 계약금액 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '별도') + ')' + (t.priceList && t.priceList > t.priceTotal ? ' · 정상가 ' + won(t.priceList) : ''));
+    L.push('발행 월 ' + (t.postsMonthly || 0) + '회 · ' + (bonus ? '총 ' + (base + bonus) + '회 (기본 ' + base + '회 + 서비스 ' + bonus + '회)' : '총 ' + base + '회'));
+    if (t.payment) L.push('결제 ' + t.payment);
+    if (t.firstReport) L.push('첫 주간 보고 ' + t.firstReport);
+    L.push('포트폴리오 활용 ' + (t.portfolioRequired ? '동의 필수 (할인가 조건)' : (signed ? (sg.consent === 'yes' ? '동의' : '미동의') : '선택')));
+    L.push('계약서 ' + c.url);
+    return L.join('\n');
+  }
   function ctList(flash, created) {
     ctBox.textContent = ''; ctBox.appendChild(el('p', 'adm-none', '계약서를 불러오는 중이에요…'));
     return api('GET', '/api/admin/contracts').then(function (j) { ctData = j; ctRender(flash, created); })
@@ -565,7 +584,14 @@
     var bar = el('div', 'pfa-bar');
     var add = button('+ 새 계약서', 'btn btn-ink'); add.addEventListener('click', function () { ctNew(); });
     var our = button('우리 정보·서명'); our.addEventListener('click', ctOur);
-    bar.appendChild(add); bar.appendChild(our); ctBox.appendChild(bar);
+    bar.appendChild(add); bar.appendChild(our);
+    var signedAll = (ctData.items || []).filter(function (x) { return x.status === 'signed'; });
+    if (signedAll.length) {
+      var all = button('서명 완료 전체 복사 (노션 정리용)');
+      all.addEventListener('click', function () { copyText(signedAll.map(ctSummary).join('\n\n'), all, '서명 완료 전체 복사 (노션 정리용)'); });
+      bar.appendChild(all);
+    }
+    ctBox.appendChild(bar);
     if (!ctData.hasOurSig) {
       var w = el('div', 'ct-warn');
       w.appendChild(el('p', null, '우리(을) 서명이 아직 없어요. 한 번 등록해 두면 새 계약서마다 자동으로 들어가요.'));
@@ -613,6 +639,7 @@
       var op = el('a', 'btn btn-ink btn-sm', signed ? '계약서 보기' : '열어보기'); op.href = c.url; op.target = '_blank'; op.rel = 'noopener';
       act.appendChild(op);
       if (signed) { var pdf = el('a', 'btn btn-outline btn-sm', 'PDF 받기'); pdf.href = c.url + '/contract.pdf'; act.appendChild(pdf); }
+      if (signed) { var ns = button('노션 정리용 복사'); ns.addEventListener('click', function () { copyText(ctSummary(c), ns, '노션 정리용 복사'); }); act.appendChild(ns); }
       if (!signed) { var edb = button('수정'); edb.addEventListener('click', function () { ctNew(c); }); act.appendChild(edb); }
       if (!signed) {
         var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url, t.priceTotal), cm, '카톡 문구 복사'); });
