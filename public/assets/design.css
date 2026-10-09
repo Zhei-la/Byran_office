@@ -579,3 +579,6 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .ct-party,.ct-table{break-inside:avoid}
 .ct-table th,.ct-party th{background:#f2f2f2!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.ct-need{border:2px solid #b0482f!important;background:#fbefeb!important;border-radius:3px;padding:14px 16px}
+.ct-need-msg{color:#b0482f;font-size:14px;font-weight:700;margin:4px 0 0;width:100%}
+.ct-kinds{display:flex;flex-wrap:wrap;gap:8px}

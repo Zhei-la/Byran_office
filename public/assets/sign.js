@@ -91,6 +91,12 @@
   var pad = ByranPad(canvas);
   var st = document.getElementById('ctStatus');
   document.getElementById('ctClear').addEventListener('click', function () { pad.clear(); });
+  // 동의를 고르면 빨간 표시 지우기
+  form.addEventListener('change', function (e) {
+    if (!e.target || e.target.name !== 'consent' || !form.querySelector('input[name="consent"]:checked')) return;
+    var box = form.querySelector('.ct-need'); if (!box) return;
+    box.classList.remove('ct-need'); var n = box.querySelector('.ct-need-msg'); if (n) n.remove();
+  });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     st.className = 'status'; st.textContent = '';
@@ -98,9 +104,23 @@
     var v = function (n) { return (form.elements[n].value || '').trim(); };
     var need = [['name', '상호를 적어주세요.'], ['ceo', '대표자 성함을 적어주세요.'], ['phone', '연락처를 적어주세요.'], ['addr', '주소를 적어주세요.']];
     for (var i = 0; i < need.length; i++) if (!v(need[i][0])) return bad(need[i][1], form.elements[need[i][0]]);
-    if (form.elements.account && !v('account')) return bad('스레드 계정 아이디를 적어주세요.', form.elements.account);
+    if (form.elements.account && !v('account')) return bad(form.elements.account.getAttribute('data-msg') || '계정 정보를 적어주세요.', form.elements.account);
     var consent = form.querySelector('input[name="consent"]:checked');
-    if (!consent) return bad(form.querySelector('input[name="consent"][type="checkbox"]') ? '할인 조건이라 포트폴리오 활용 동의에 체크해 주세요.' : '포트폴리오 활용 동의 여부를 골라주세요.');
+    if (!consent) {
+      // 동의 칸을 빨갛게 표시하고 그 안에 안내를 띄운 뒤 그 자리로 이동
+      var req = !!form.querySelector('input[name="consent"][type="checkbox"]');
+      var box = form.querySelector('.ct-req, .ct-radio');
+      var msg = req ? '이벤트가(할인가) 계약은 포트폴리오 활용 동의가 필수예요. 동의에 체크해야 서명할 수 있어요.' : '포트폴리오 활용 동의 여부를 골라주세요.';
+      if (box) {
+        box.classList.add('ct-need');
+        var note = box.querySelector('.ct-need-msg');
+        if (!note) { note = document.createElement('p'); note.className = 'ct-need-msg'; note.setAttribute('role', 'alert'); box.appendChild(note); }
+        note.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var first = box.querySelector('input[name="consent"]'); if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 350);
+      }
+      return bad(msg);
+    }
     if (pad.isEmpty()) return bad('서명 칸에 서명해 주세요.', canvas);
     var agree = document.getElementById('ctAgree');
     if (!agree.checked) return bad('계약 내용 동의에 체크해 주세요.', agree);

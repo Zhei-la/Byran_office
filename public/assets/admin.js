@@ -563,7 +563,18 @@
     if (sg.ceo) L.push('대표자 ' + sg.ceo);
     if (sg.phone) L.push('연락처 ' + sg.phone);
     if (sg.bizno) L.push('사업자번호 ' + sg.bizno);
-    L.push('스레드 계정 ' + (t.account ? '@' + t.account : (sg.account ? '@' + String(sg.account).replace(/^@+/, '') : '미입력')));
+    L.push('종류 ' + ctKindLabel(t));
+    if (t.kind === 'web') {
+      if (t.account) L.push((t.product === 'blogHome' ? '블로그 ' : '홈페이지 주소 ') + t.account);
+      if (t.scope) L.push('제작 범위 ' + t.scope);
+      L.push('작업 시작 ' + (t.start || '입금·자료 전달 후') + ' · 완성 예정 ' + (t.due || '협의'));
+      L.push('총 계약금액 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '별도') + ')' + (t.priceList && t.priceList > t.priceTotal ? ' · 정상가 ' + won(t.priceList) : ''));
+      L.push('결제 ' + (t.payment || '') + ' · 완성 후 무료 수정 ' + (t.revisions || 3) + '회, 이후 1회 ' + won(t.extraFee));
+      L.push('포트폴리오 활용 ' + (t.portfolioRequired ? '동의 필수 (할인가 조건)' : (signed ? (sg.consent === 'yes' ? '동의' : '미동의') : '선택')));
+      L.push('계약서 ' + c.url);
+      return L.join('\n');
+    }
+    L.push((t.kind === 'blog' ? '블로그 ' + (t.account || '미입력') : '스레드 계정 ' + (t.account ? '@' + t.account : (sg.account ? '@' + String(sg.account).replace(/^@+/, '') : '미입력'))));
     L.push('계약 기간 ' + (t.start || '') + ' ~ ' + (t.end || '') + (t.months ? ' (' + t.months + '개월)' : ''));
     if (t.testStart || t.testEnd) L.push('테스트 기간 ' + (t.testStart || '') + ' ~ ' + (t.testEnd || ''));
     L.push('총 계약금액 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '별도') + ')' + (t.priceList && t.priceList > t.priceTotal ? ' · 정상가 ' + won(t.priceList) : ''));
@@ -623,11 +634,15 @@
       var info = el('div', 'pfa-info');
       var top = el('div', 'adm-top');
       top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
+      top.appendChild(el('span', 'stpill', ctKindLabel(t)));
       if (t.portfolioRequired) top.appendChild(el('span', 'stpill stpill-done', '할인가 · 포폴 동의 필수'));
       top.appendChild(el('span', 'adm-date', '만든 날 ' + fmtDate(c.createdAt)));
       info.appendChild(top);
-      info.appendChild(el('h3', null, (t.client || '상호 고객 입력') + ' · ' + (t.account ? '@' + t.account : '계정 고객 입력')));
-      info.appendChild(el('p', 'pfa-sub', (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · 월 ' + (t.postsMonthly || 0) + '회'));
+      var accTxt = t.kind === 'web' ? (t.account || (t.product === 'blogHome' ? '블로그 고객 입력' : '')) : t.kind === 'blog' ? (t.account || '블로그 고객 입력') : (t.account ? '@' + t.account : '계정 고객 입력');
+      info.appendChild(el('h3', null, (t.client || '상호 고객 입력') + (accTxt ? ' · ' + accTxt : '')));
+      info.appendChild(el('p', 'pfa-sub', t.kind === 'web'
+        ? '완성 예정 ' + (t.due || '협의') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · ' + (t.payment || '')
+        : (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · 월 ' + (t.postsMonthly || 0) + '회'));
       if (signed) {
         var sg = c.signer || {};
         info.appendChild(el('p', 'pfa-hl', '서명 ' + fmtDate(c.signedAt) + ' · ' + (sg.ceo || '') + ' · ' + (sg.phone || '') + ' · 포트폴리오 ' + (sg.consent === 'yes' ? '동의' : '미동의')));
@@ -681,11 +696,173 @@
   function parseD(s) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
   function digits(s) { return parseInt(String(s || '').replace(/[^\d]/g, ''), 10) || 0; }
 
-  function ctNew(src) {
-    var T = (src && src.terms) || null; // 수정이면 기존 조건
+  // 계약서 종류
+  var CT_KINDS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['web', '홈페이지 · 홈페이지형 블로그 제작']];
+  function ctKindLabel(t) { t = t || {}; if (t.kind === 'blog') return '블로그 운영 대행'; if (t.kind === 'web') return t.product === 'blogHome' ? '홈페이지형 블로그 제작' : '홈페이지 제작'; return '스레드 운영 대행'; }
+  function ctKindPicker(src, K) {
+    var w = el('div', 'pfa-field wide'); w.appendChild(el('label', null, '계약서 종류'));
+    var row = el('div', 'ct-kinds');
+    CT_KINDS.forEach(function (k) {
+      var b = button(k[1], 'btn btn-sm ' + (k[0] === K ? 'btn-ink' : 'btn-outline'));
+      b.setAttribute('aria-pressed', k[0] === K ? 'true' : 'false');
+      b.addEventListener('click', function () { if (k[0] !== K) ctNew(src, k[0]); });
+      row.appendChild(b);
+    });
+    w.appendChild(row);
+    if (src && src.terms && (src.terms.kind || 'threads') !== K) w.appendChild(el('p', 'pfa-hint', '종류를 바꾸면 저장할 때 계약서 내용이 새 종류로 바뀌어요.'));
+    return w;
+  }
+  // 블로그 운영 대행 · 제작(홈페이지 / 홈페이지형 블로그) 양식
+  function ctNewOther(src, K) {
+    var T = (src && src.terms) || null;
+    var same = T && (T.kind || 'threads') === K; // 같은 종류를 고치는 중이면 기존 값 채우기
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
     f.appendChild(ctHead(T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(ctKindPicker(src, K));
+    var web = K === 'web';
+    f.appendChild(el('p', 'pfa-hint', web
+      ? '금액과 완성 예정일만 정하면 돼요. 고객 상호는 모르면 비워두세요(고객이 링크에서 직접 적어요). 완성 후 무료 수정 횟수와 추가 수정 금액이 계약서에 들어가요.'
+      : '기간·금액·발행 횟수만 정하면 돼요. 고객 상호와 블로그 주소는 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력).'));
+    var v = function (k, d) { return same && T[k] != null && T[k] !== 0 && T[k] !== '' ? String(T[k]) : (T && !same && (k === 'client') && T[k] ? String(T[k]) : (d == null ? '' : String(d))); };
+    var nm0 = new Date();
+    var PLAN = web ? {
+      'website': ['홈페이지 제작 · 15만 원 (정상가 30만 원)', 'website', 300000, 150000],
+      'blogHome': ['홈페이지형 블로그 제작 · 10만 원 (정상가 20만 원)', 'blogHome', 200000, 100000]
+    } : {
+      'basic-1': ['BASIC · 월 12회 · 1개월 · 20만 원', 12, 1, 300000, 200000, 1500, 7],
+      'basic-2': ['BASIC · 월 12회 · 2개월 · 40만 원', 12, 2, 600000, 400000, 1500, 7],
+      'basic-3': ['BASIC · 월 12회 · 3개월 · 60만 원', 12, 3, 900000, 600000, 1500, 7],
+      'std-1': ['STANDARD · 월 20회 · 1개월 · 30만 원', 20, 1, 400000, 300000, 2000, 10],
+      'std-2': ['STANDARD · 월 20회 · 2개월 · 60만 원', 20, 2, 800000, 600000, 2000, 10],
+      'std-3': ['STANDARD · 월 20회 · 3개월 · 90만 원', 20, 3, 1200000, 900000, 2000, 10]
+    };
+    var planSel = el('select'); var o0 = el('option', null, T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
+    Object.keys(PLAN).forEach(function (k) { var x = el('option', null, PLAN[k][0]); x.value = k; planSel.appendChild(x); });
+    var pg = el('div', 'pfa-grid'); pg.appendChild(ctField(web ? '제작 상품' : '요금제', planSel, '고르면 금액' + (web ? '' : '·기간·횟수') + '이 자동으로 채워져요. 이벤트가처럼 다르게 받을 땐 총 계약금액만 고치면 돼요.', true)); f.appendChild(pg);
+    var g = el('div', 'pfa-grid');
+    var client = ctInput('text', v('client'), '예: 행컵 안산한양대점'); client.maxLength = 100;
+    var pTot = ctInput('text', v('priceTotal'), '예: 150000'); pTot.inputMode = 'numeric';
+    var pList = ctInput('text', v('priceList'), '예: 300000'); pList.inputMode = 'numeric';
+    var vat = ctSelect(['별도', '포함'], (same && T.vat) || '별도');
+    var rev = ctInput('number', v('revisions', web ? 3 : 2)); rev.min = 1; rev.max = 10;
+    var pfW = el('label', 'pfa-check ct-pfreq'); var pfReq = el('input'); pfReq.type = 'checkbox'; pfReq.checked = !!(same && T.portfolioRequired);
+    pfW.appendChild(pfReq); pfW.appendChild(el('span', null, '할인가 계약 · 포트폴리오 활용 동의 필수'));
+    var get;
+    g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
+    if (web) {
+      var prod = el('select'); [['website', '홈페이지 제작'], ['blogHome', '홈페이지형 블로그 제작']].forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; if ((same && T.product) === o[0]) x.selected = true; prod.appendChild(x); });
+      var acc = ctInput('text', v('account'), ''); acc.maxLength = 60;
+      var accF = ctField('홈페이지 주소', acc, ' ');
+      var scope = el('textarea'); scope.rows = 2; scope.maxLength = 300; scope.value = v('scope'); scope.placeholder = '비워두면 기본 문구가 들어가요';
+      var start = ctInput('date', v('start')), due = ctInput('date', v('due'));
+      var pay = ctSelect(['일시불 선결제', '착수금 50% · 완성 후 잔금 50%'], (same && T.payment) || '일시불 선결제');
+      var fee = ctInput('text', v('extraFee', 10000)); fee.inputMode = 'numeric';
+      var adW = el('label', 'pfa-check'); var adm = el('input'); adm.type = 'checkbox'; adm.checked = same ? !!T.adminPage : true;
+      adW.appendChild(adm); adW.appendChild(el('span', null, '관리자 페이지 포함 (고객이 문구·사진 직접 수정)'));
+      var adBox = el('div', 'pfa-field wide'); adBox.appendChild(adW);
+      var syncProd = function () {
+        var bh = prod.value === 'blogHome';
+        accF.querySelector('label').textContent = bh ? '블로그 주소' : '홈페이지 주소 (있으면)';
+        acc.placeholder = bh ? '예: blog.naver.com/byran' : '예: byranmk.com';
+        accF.querySelector('.pfa-hint').textContent = bh ? '모르면 비워두기 → 고객이 직접 입력' : '아직 없으면 비워두세요';
+        adBox.hidden = bh;
+      };
+      g.appendChild(ctField('제작 종류 *', prod));
+      g.appendChild(accF);
+      g.appendChild(ctField('제작 범위', scope, '예: 메인 · 회사 소개 · 시공 사례 · 문의 4페이지', true));
+      g.appendChild(ctField('작업 시작일', start, '비워두면 "입금과 자료 전달이 끝난 날"로 들어가요.'));
+      g.appendChild(ctField('완성 예정일', due, '비워두면 "자료를 받은 뒤 협의"로 들어가요.'));
+      g.appendChild(ctField('총 계약금액 * (실제로 받는 금액)', pTot));
+      g.appendChild(ctField('정상가 (원래 금액)', pList, '총 계약금액보다 크면 "정상가 → 할인 금액"이 같이 나와요.'));
+      g.appendChild(ctField('부가세', vat));
+      g.appendChild(ctField('결제 방식', pay));
+      g.appendChild(ctField('완성 후 무료 수정 횟수', rev));
+      g.appendChild(ctField('추가 수정 1회 금액 (원)', fee, '무료 횟수를 넘긴 수정 1회 금액이에요.'));
+      f.appendChild(g); f.appendChild(adBox);
+      prod.addEventListener('change', syncProd); syncProd();
+      planSel.addEventListener('change', function () {
+        var p = PLAN[planSel.value]; if (!p) return;
+        prod.value = p[1]; pList.value = String(p[2]); pTot.value = String(p[3]); syncProd();
+      });
+      get = function () {
+        return { kind: 'web', product: prod.value, client: client.value, account: acc.value, scope: scope.value, start: start.value, due: due.value,
+          priceTotal: digits(pTot.value), priceList: digits(pList.value), vat: vat.value, payment: pay.value, revisions: digits(rev.value) || 3,
+          extraFee: fee.value === '' ? 0 : digits(fee.value), adminPage: prod.value === 'website' && adm.checked, portfolioRequired: pfReq.checked };
+      };
+    } else {
+      var account = ctInput('text', v('account'), '예: blog.naver.com/byran'); account.maxLength = 60;
+      var start = ctInput('date', v('start', iso(new Date(nm0.getFullYear(), nm0.getMonth() + 1, 1))));
+      var months = ctInput('number', v('months', 1)); months.min = 1; months.max = 60;
+      var end = ctInput('date', v('end'));
+      var poM = ctInput('number', v('postsMonthly', 12)); poM.min = 1;
+      var poT = ctInput('number', v('postsTotal')); poT.placeholder = '자동 계산';
+      var poB = ctInput('number', v('postsBonus', 0)); poB.min = 0;
+      var chars = ctInput('number', v('charLimit', 1500)); chars.min = 0;
+      var imgs = ctInput('number', v('images', 7)); imgs.min = 0;
+      var pay = ctSelect(['일시불 선결제', '매월 선결제'], (same && T.payment) || '일시불 선결제');
+      g.appendChild(ctField('블로그 주소', account, '모르면 비워두기 → 고객이 직접 입력'));
+      g.appendChild(ctField('시작일 *', start));
+      g.appendChild(ctField('개월 수 *', months, '시작일과 개월 수를 넣으면 종료일이 자동으로 채워져요.'));
+      g.appendChild(ctField('종료일 *', end));
+      g.appendChild(ctField('총 계약금액 * (실제로 받는 금액)', pTot));
+      g.appendChild(ctField('정상가 (이 기간 원래 금액)', pList, '총 계약금액보다 크면 "정상가 → 할인 금액"이 같이 나와요.'));
+      g.appendChild(ctField('부가세', vat));
+      g.appendChild(ctField('월 발행 횟수 *', poM));
+      g.appendChild(ctField('기본 발행 횟수 (환불 기준)', poT, '월 발행 횟수 × 개월 수로 자동 계산돼요.'));
+      g.appendChild(ctField('서비스 횟수 (덤)', poB, '이벤트로 더 드리는 횟수예요. 환불 계산에는 안 들어가요.'));
+      g.appendChild(ctField('글 1편 글자 수 (이내)', chars));
+      g.appendChild(ctField('글 1편 이미지 (장 이상)', imgs));
+      g.appendChild(ctField('결제 방식', pay));
+      g.appendChild(ctField('원고 수정 횟수 (글 한 건당)', rev));
+      f.appendChild(g);
+      var poTouched = !!(same && T.postsTotal);
+      poT.addEventListener('input', function () { poTouched = true; });
+      var auto = function () {
+        var n = Math.max(1, digits(months.value)), sd = parseD(start.value);
+        if (sd) end.value = iso(new Date(sd.getFullYear(), sd.getMonth() + n, sd.getDate() - 1));
+        if (!poTouched && digits(poM.value)) poT.value = String(digits(poM.value) * n);
+      };
+      [start, months, poM].forEach(function (x) { x.addEventListener('input', auto); x.addEventListener('change', auto); });
+      if (!same) auto();
+      planSel.addEventListener('change', function () {
+        var p = PLAN[planSel.value]; if (!p) return;
+        poM.value = String(p[1]); months.value = String(p[2]); pList.value = p[3] > p[4] ? String(p[3]) : ''; pTot.value = String(p[4]);
+        chars.value = String(p[5]); imgs.value = String(p[6]); poTouched = false; auto();
+      });
+      get = function () {
+        return { kind: 'blog', client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
+          priceTotal: digits(pTot.value), priceList: digits(pList.value), vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value),
+          postsBonus: digits(poB.value), charLimit: digits(chars.value), images: digits(imgs.value), payment: pay.value, revisions: digits(rev.value) || 2, portfolioRequired: pfReq.checked };
+      };
+    }
+    var pfBoxW = el('div', 'pfa-field wide'); pfBoxW.appendChild(pfW); pfBoxW.appendChild(el('p', 'pfa-hint', '체크하면 고객이 포트폴리오 동의를 꼭 해야 서명할 수 있어요(할인 조건). 체크 안 하면 고객이 동의/미동의를 골라요.')); f.appendChild(pfBoxW);
+    var foot = el('div', 'pfa-save ct-save');
+    var sv = el('button', 'btn btn-ink', T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var body = get();
+      if (!body.priceTotal) { st.textContent = '총 계약금액을 적어주세요.'; return; }
+      sv.disabled = true; st.textContent = '저장하는 중…';
+      (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+        if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
+      }, function (err) {
+        sv.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
+      });
+    });
+    ctBox.appendChild(f);
+    window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
+  function ctNew(src, kindArg) {
+    var T = (src && src.terms) || null; // 수정이면 기존 조건
+    var K = kindArg || (T && T.kind) || 'threads';
+    if (K !== 'threads') return ctNewOther(src, K);
+    ctBox.textContent = '';
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.appendChild(ctHead(T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(ctKindPicker(src, K));
     f.appendChild(el('p', 'pfa-hint', T ? '고객이 서명하기 전이라 고칠 수 있어요. 저장하면 보냈던 링크에도 바로 반영돼요.' : '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
     var askPre = null, askCp = null;
     if (!T) {
@@ -784,7 +961,7 @@
     var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
     f.addEventListener('submit', function (e) {
       e.preventDefault();
-      var body = { client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
+      var body = { kind: 'threads', client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
         testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
         vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), portfolioRequired: pfReq.checked, payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
       sv.disabled = true; st.textContent = '저장하는 중…';
