@@ -582,3 +582,19 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .ct-need{border:2px solid #b0482f!important;background:#fbefeb!important;border-radius:3px;padding:14px 16px}
 .ct-need-msg{color:#b0482f;font-size:14px;font-weight:700;margin:4px 0 0;width:100%}
 .ct-kinds{display:flex;flex-wrap:wrap;gap:8px}
+
+/* 여러 화면 넘겨보기 카드 */
+.pf-slides{position:relative;overflow:hidden}
+.pf-track{display:flex;height:100%;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pf-track::-webkit-scrollbar{display:none}
+.pf-slide{flex:0 0 100%;height:100%;margin:0;scroll-snap-align:start}
+.pf-slide a{display:block;height:100%;cursor:zoom-in}
+.pf-slide img{display:block;width:100%;height:100%;object-fit:cover;object-position:center top}
+.pf-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;border:0;background:rgba(24,27,24,.72);color:#fff;font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0 0 3px}
+.pf-prev{left:10px}.pf-next{right:10px}
+.pf-nav[disabled]{opacity:0;pointer-events:none}
+.pf-thumb .pf-dots,.pf-dots{position:absolute;left:0;right:0;bottom:10px;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.pf-dots i{width:7px;height:7px;border-radius:50%;background:rgba(24,27,24,.28)}
+.pf-dots i.on{background:rgba(24,27,24,.85);width:18px;border-radius:4px}
+.pf-thumb .pf-count,.pf-count{position:absolute;right:10px;top:10px;background:rgba(24,27,24,.72);color:#fff;font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
+@media(max-width:700px){.pf-nav{width:30px;height:30px;font-size:18px}}

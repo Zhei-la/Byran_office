@@ -105,6 +105,27 @@
     }).catch(function () {});
   }
 
+  // 여러 화면 넘겨보기 (포트폴리오 카드)
+  document.querySelectorAll('[data-slides]').forEach(function (box) {
+    var track = box.querySelector('.pf-track'), dots = box.querySelectorAll('.pf-dots i');
+    var prev = box.querySelector('.pf-prev'), next = box.querySelector('.pf-next'), cnt = box.querySelector('.pf-count');
+    var n = track.children.length;
+    function cur() { return Math.round(track.scrollLeft / (track.clientWidth || 1)); }
+    function paint() {
+      var i = cur();
+      dots.forEach(function (d, k) { d.classList.toggle('on', k === i); });
+      if (prev) prev.disabled = i <= 0;
+      if (next) next.disabled = i >= n - 1;
+      if (cnt) cnt.textContent = (i + 1) + ' / ' + n;
+    }
+    function go(d) { track.scrollTo({ left: (cur() + d) * track.clientWidth, behavior: 'smooth' }); }
+    if (prev) prev.addEventListener('click', function () { go(-1); });
+    if (next) next.addEventListener('click', function () { go(1); });
+    var t; track.addEventListener('scroll', function () { clearTimeout(t); t = setTimeout(paint, 60); });
+    window.addEventListener('resize', paint);
+    paint();
+  });
+
   // 통계 사진 크게 보기
   var zooms = document.querySelectorAll('[data-zoom]');
   if (zooms.length && typeof HTMLDialogElement === 'function') {
