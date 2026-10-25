@@ -551,7 +551,7 @@
   function ctMsg(url, total) {
     var o = ctData.our || {};
     var acc = o.account ? '\n\n입금 계좌\n' + (o.bank ? o.bank + ' ' : '') + o.account + (o.holder ? ' (예금주 ' + o.holder + ')' : '') + (total ? '\n입금 금액 ' + Number(total).toLocaleString('ko-KR') + '원' : '') : '';
-    return '계약서 보내드려요\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 돼요\n서명하시면 계약서를 PDF로 저장하실 수 있어요\n' + url + acc;
+    return '계약서 보내드립니다!\n\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 되세요 :)\n\n서명하시면 계약서를 PDF로 저장하실 수 있으니 따로 저장 해주세요!\n\n' + url + acc;
   }
   function accOnly() { var o = ctData.our || {}; return o.account ? o.account.replace(/[^0-9-]/g, '') : ''; }
   function won(n) { return n ? Number(n).toLocaleString('ko-KR') + '원' : '-'; }
