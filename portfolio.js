@@ -111,6 +111,10 @@ function makePgStore(query) {
     async markSeed(key, id) {
       await query(`INSERT INTO pf_seeds (key, post_id) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING`, [key, id]);
     },
+    async seededPost(key) {
+      const { rows } = await query(`SELECT post_id FROM pf_seeds WHERE key = $1`, [key]);
+      return rows[0] && rows[0].post_id ? String(rows[0].post_id) : null;
+    },
     async publishSeeded(key) {
       const r = await query(`UPDATE pf_posts SET published = true, updated_at = now() WHERE id = (SELECT post_id FROM pf_seeds WHERE key = $1)`, [key]);
       return r.rowCount;
@@ -179,6 +183,7 @@ function makeFileStore(dir) {
     async hasSeed(key) { return (read().seeds || []).includes(key); },
     async markSeed(key) { const d = read(); d.seeds = (d.seeds || []).concat(key); write(d); },
     async publishSeeded() { return 0; },
+    async seededPost() { return null; },
     async replaceImage(sha, mime, buf) {
       const d = read(); let n = 0;
       d.images.forEach((im) => {
@@ -234,6 +239,22 @@ async function importSeeds(store, dir) {
       }
       let pub = 0;
       for (const k of fx.publish || []) pub += await store.publishSeeded(clip(k, 80));
+      // 글 내용 고치기: { post: 글 key, set: {summary 등}, texts: [글 칸 순서대로], captions: [사진 설명 순서대로] }
+      if (fx.post) {
+        const pid = await store.seededPost(clip(fx.post, 80));
+        const cur = pid && await store.get(pid);
+        if (cur) {
+          const next = { ...cur, ...(fx.set || {}) };
+          let ti = 0; let ci = 0;
+          next.blocks = (cur.blocks || []).map((b) => {
+            if (b.type === 'text' && Array.isArray(fx.texts) && ti < fx.texts.length) return { ...b, text: fx.texts[ti++] };
+            if (b.type === 'img' && Array.isArray(fx.captions) && ci < fx.captions.length) return { ...b, caption: fx.captions[ci++] };
+            return b;
+          });
+          await store.update(pid, cleanPost(next));
+          console.log(`[pf seed] ${key} → 글 ${pid} 내용 고침`);
+        }
+      }
       await store.markSeed(key, null);
       console.log(`[pf seed] ${key} → 사진 ${n}장 바꿈, 공개 ${pub}개`);
     } catch (e) { console.error('[pf seed fix]', f, e.message); }
