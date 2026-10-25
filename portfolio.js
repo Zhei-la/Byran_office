@@ -49,7 +49,9 @@ function cleanPost(b) {
   };
 }
 const imgIds = (blocks) => blocks.filter((b) => b.type === 'img').map((b) => b.img);
-const coverOf = (p) => { const i = (p.blocks || []).find((b) => b.type === 'img'); return i ? `/media/pf/${i.img}` : ''; };
+// 사진을 바꿔도 같은 주소면 휴대폰에 예전 사진이 남아서, 글 수정 시각을 주소 뒤에 붙여요
+const imgVer = (p) => { const t = Date.parse(p && p.updatedAt); return t ? `?v=${t.toString(36)}` : ''; };
+const coverOf = (p) => { const i = (p.blocks || []).find((b) => b.type === 'img'); return i ? `/media/pf/${i.img}${imgVer(p)}` : ''; };
 
 // 사진 형식 확인 (앞부분 바이트로)
 function sniff(buf) {
@@ -301,7 +303,7 @@ function renderPage(tpl, p, { host, draft }) {
   if (p.period) meta.push(`<span class="chip"><b>기간</b> ${esc(p.period)}</span>`);
   const body = (p.blocks || []).map((b) => {
     if (b.type === 'text') return `<div class="pfd-text">${textHtml(b.text)}</div>`;
-    const src = `/media/pf/${b.img}`;
+    const src = `/media/pf/${b.img}${imgVer(p)}`;
     const alt = b.caption || p.title;
     return `<figure class="pfd-fig"><a href="${src}" data-zoom aria-label="크게 보기"><img src="${src}" alt="${esc(alt)}" loading="lazy"></a>${b.caption ? `<figcaption>${esc(b.caption)}</figcaption>` : ''}</figure>`;
   }).join('\n');
