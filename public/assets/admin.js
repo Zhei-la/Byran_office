@@ -942,7 +942,7 @@
       var askText = function () {
         var sd = parseD(start.value);
         var when = sd ? (sd.getMonth() + 1) + '월 ' + sd.getDate() + '일' : '11월';
-        return '계정 대행 운영은 ' + when + '부터 시작됩니다\n\n진행 기간 선택 해주세요! (1개월 10만 원 / 2개월 20만 원 / 3개월 25만 원) - \n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 됩니다 :)';
+        return '계정 대행 운영은 ' + when + '부터 시작됩니다\n\n진행 기간 선택 해주세요! (1개월 10만 원 / 3개월 25만 원) - \n\n상호랑 계정 같은 나머지 정보는 계약서 링크에서 직접 적으시면 됩니다 :)';
       };
       var updAsk = function () { askPre.textContent = askText(); };
       start.addEventListener('input', updAsk); start.addEventListener('change', updAsk);
