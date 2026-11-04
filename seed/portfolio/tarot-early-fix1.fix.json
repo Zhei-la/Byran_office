@@ -1,0 +1,14 @@
+{
+  "key": "tarot-early-2026-11-fix1",
+  "postId": 4,
+  "expectTitle": "타로 상담 계정",
+  "textReplace": [
+    { "includes": "상담 문의가 2건 들어왔어요", "text": "상담 문의 2건\n\n운영 초기인데 스레드를 보고 상담 문의가 2건 들어왔어요.\n대행 2주 차에 대표님이 \"첫 문의가 왔어요!\" 하고 먼저 알려주셨고, 그 뒤로 두 번째 문의가 이어졌어요." }
+  ],
+  "captionReplace": [
+    { "includes": "상담 문의 (이름·내용 가림)", "caption": "대표님 카톡 · 두 번째 상담 문의 (이름·내용 가림)" }
+  ],
+  "insert": [
+    { "beforeCaptionIncludes": "두 번째 상담 문의", "block": { "type": "img", "file": "tarot-inq1.jpg", "caption": "대표님 카톡 · 첫 번째 상담 문의 \"이안님~ 첫 문의가 왔어요!\" (이름 가림)" } }
+  ]
+}

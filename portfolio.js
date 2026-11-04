@@ -257,6 +257,30 @@ async function importSeeds(store, dir) {
           console.log(`[pf seed] ${key} → 글 ${pid} 내용 고침`);
         }
       }
+      // 관리자에서 쓴 글 고치기: { postId, expectTitle, textReplace: [{includes, text}], captionReplace: [{includes, caption}],
+      //   insert: [{ beforeCaptionIncludes, block: { type: 'img', file, caption } | { type: 'text', text } }] }
+      if (fx.postId) {
+        const cur = await store.get(String(fx.postId));
+        if (cur && (!fx.expectTitle || String(cur.title).includes(fx.expectTitle))) {
+          let blocks = (cur.blocks || []).map((b) => {
+            if (b.type === 'text') { const r = (fx.textReplace || []).find((x) => b.text.includes(x.includes)); return r ? { ...b, text: r.text } : b; }
+            if (b.type === 'img') { const r = (fx.captionReplace || []).find((x) => (b.caption || '').includes(x.includes)); return r ? { ...b, caption: r.caption } : b; }
+            return b;
+          });
+          for (const ins of fx.insert || []) {
+            let nb = ins.block;
+            if (nb && nb.type === 'img' && nb.file) {
+              const buf = fs.readFileSync(path.join(dir, path.basename(nb.file)));
+              const mime = sniff(buf); if (!mime) continue;
+              nb = { type: 'img', img: +(await store.addImage(mime, buf)), caption: nb.caption || '' };
+            }
+            const at = blocks.findIndex((b) => b.type === 'img' && (b.caption || '').includes(ins.beforeCaptionIncludes));
+            if (at >= 0) blocks.splice(at, 0, nb); else blocks.push(nb);
+          }
+          await store.update(cur.id, cleanPost({ ...cur, ...(fx.set || {}), blocks }));
+          console.log(`[pf seed] ${key} → 글 ${cur.id} 내용 고침 (관리자 글)`);
+        } else console.log(`[pf seed] ${key} → 글 ${fx.postId} 못 찾음 또는 제목 다름`);
+      }
       await store.markSeed(key, null);
       console.log(`[pf seed] ${key} → 사진 ${n}장 바꿈, 공개 ${pub}개`);
     } catch (e) { console.error('[pf seed fix]', f, e.message); }
