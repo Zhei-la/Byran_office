@@ -727,8 +727,9 @@
     var v = function (k, d) { return same && T[k] != null && T[k] !== 0 && T[k] !== '' ? String(T[k]) : (T && !same && (k === 'client') && T[k] ? String(T[k]) : (d == null ? '' : String(d))); };
     var nm0 = new Date();
     var PLAN = web ? {
-      'website': ['홈페이지 제작 · 15만 원 (정상가 30만 원)', 'website', 300000, 150000],
-      'blogHome': ['홈페이지형 블로그 제작 · 10만 원 (정상가 20만 원)', 'blogHome', 200000, 100000]
+      'website': ['홈페이지 제작 · 30만 원', 'website', 300000, 300000],
+      'blogHome': ['홈페이지형 블로그 제작 · 15만 원', 'blogHome', 150000, 150000],
+      'blogHomeBlog': ['홈페이지형 블로그 제작 · 10만 원 (블로그 운영 대행 함께)', 'blogHome', 150000, 100000]
     } : {
       'basic-1': ['BASIC · 월 12회 · 1개월 · 20만 원', 12, 1, 300000, 200000, 1500, 7],
       'basic-2': ['BASIC · 월 12회 · 2개월 · 40만 원', 12, 2, 600000, 400000, 1500, 7],

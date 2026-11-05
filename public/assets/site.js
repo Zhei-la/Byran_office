@@ -189,7 +189,7 @@
     var quote = (function () {
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
-      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 10, website: 15, diag: 0 };
+      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0 };
       var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m20' };
       var TH_DETAIL = { '1m20': '1개월 · 월 20회', '1m31': '1개월 · 1일 1글 31회', '3m': '3개월 · 총 90회' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
@@ -205,7 +205,7 @@
           list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월', price: m * state.blogMonths });
         }
         if (on('threads')) list.push({ name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
-        if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.bloghome });
+        if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.website });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
         return list;
