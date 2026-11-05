@@ -727,7 +727,7 @@
     var v = function (k, d) { return same && T[k] != null && T[k] !== 0 && T[k] !== '' ? String(T[k]) : (T && !same && (k === 'client') && T[k] ? String(T[k]) : (d == null ? '' : String(d))); };
     var nm0 = new Date();
     var PLAN = web ? {
-      'website': ['홈페이지 제작 · 30만 원', 'website', 300000, 300000],
+      'website': ['홈페이지 제작 · 30만 원 (랜딩페이지형 기본 · 기능 추가 시 금액 고치기)', 'website', 300000, 300000],
       'blogHome': ['홈페이지형 블로그 제작 · 15만 원', 'blogHome', 150000, 150000],
       'blogHomeBlog': ['홈페이지형 블로그 제작 · 10만 원 (블로그 운영 대행 함께)', 'blogHome', 150000, 100000]
     } : {

@@ -206,7 +206,7 @@
         }
         if (on('threads')) list.push({ name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
-        if (on('website')) list.push({ name: '홈페이지 제작', detail: '1회 제작 · 완성 후 수정 3회', price: PRICE.website });
+        if (on('website')) list.push({ name: '홈페이지 제작', detail: '랜딩페이지형 기준 · 기능 추가 시 별도', price: PRICE.website, from: true });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
         return list;
       }
@@ -214,15 +214,16 @@
         var e = document.createElement('li');
         var a = document.createElement('span'); a.className = 'q-l-name'; a.textContent = it.name;
         var d = document.createElement('small'); d.textContent = it.detail; a.appendChild(d);
-        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.price ? won(it.price) : '무료';
+        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.price ? won(it.price) + (it.from ? '~' : '') : '무료';
         e.appendChild(a); e.appendChild(b); return e;
       }
       function render() {
         var list = items(), total = list.reduce(function (t, x) { return t + x.price; }, 0);
+        var tw = won(total) + (list.some(function (x) { return x.from; }) ? '~' : '');
         opts.querySelectorAll('.q-card').forEach(function (c) { c.classList.toggle('on', c.querySelector('input').checked); });
         linesEl.textContent = ''; list.forEach(function (it) { linesEl.appendChild(li(it)); });
         emptyEl.hidden = list.length > 0;
-        totalEl.textContent = won(total); if (barTotal) barTotal.textContent = won(total);
+        totalEl.textContent = tw; if (barTotal) barTotal.textContent = tw;
         var sb = card('blog'); if (sb) sb.querySelector('output').textContent = state.blogMonths + '개월';
         if (summary) {
           summary.textContent = '';
@@ -230,7 +231,7 @@
             var p = document.createElement('p'); p.className = 'q-sum-empty'; p.textContent = '선택한 서비스가 없어요. 일반 문의로 접수돼요.'; summary.appendChild(p);
           } else {
             var ul = document.createElement('ul'); list.forEach(function (it) { ul.appendChild(li(it)); }); summary.appendChild(ul);
-            var t = document.createElement('p'); t.className = 'q-sum-total'; t.innerHTML = '<span>예상 비용</span><b></b>'; t.querySelector('b').textContent = won(total); summary.appendChild(t);
+            var t = document.createElement('p'); t.className = 'q-sum-total'; t.innerHTML = '<span>예상 비용</span><b></b>'; t.querySelector('b').textContent = tw; summary.appendChild(t);
           }
           var ed = document.createElement('a'); ed.className = 'q-edit'; ed.href = '#quote'; ed.textContent = list.length ? '구성 바꾸기' : '구성 고르기'; summary.appendChild(ed);
         }
@@ -265,7 +266,7 @@
         render: render,
         text: function () {
           var r = render(); if (!r.list.length) return '';
-          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total);
+          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total) + (r.list.some(function (x) { return x.from; }) ? '~ (기능 추가 시 별도)' : '');
         },
         reset: function () {
           opts.querySelectorAll('input[name="svc"]').forEach(function (i) { i.checked = false; });
