@@ -598,3 +598,12 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 .pf-dots i.on{background:rgba(24,27,24,.85);width:18px;border-radius:4px}
 .pf-thumb .pf-count,.pf-count{position:absolute;right:10px;top:10px;background:rgba(24,27,24,.72);color:#fff;font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
 @media(max-width:700px){.pf-nav{width:30px;height:30px;font-size:18px}}
+
+/* 카톡 문의 떠 있는 버튼 */
+.kakao-fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:45;display:inline-flex;align-items:center;gap:8px;height:52px;padding:0 20px 0 16px;border-radius:999px;background:#FEE500;color:#191600;font-weight:700;font-size:15px;letter-spacing:-.02em;text-decoration:none;box-shadow:0 10px 26px rgba(0,0,0,.28);transition:transform .15s ease,box-shadow .15s ease}
+.kakao-fab svg{width:24px;height:24px;fill:#191600;flex:none}
+.kakao-fab:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(0,0,0,.32)}
+.kakao-fab:focus-visible{outline:3px solid #191600;outline-offset:3px}
+body:has(.q-bar:not([hidden])) .kakao-fab{bottom:calc(92px + env(safe-area-inset-bottom))}
+@media (max-width:600px){.kakao-fab{height:48px;padding:0 16px 0 13px;font-size:14px;right:14px}}
+@media print{.kakao-fab{display:none}}

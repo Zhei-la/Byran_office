@@ -427,3 +427,14 @@
 
 
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){document.getElementById('siteNav')?.classList.remove('open');document.getElementById('navToggle')?.setAttribute('aria-expanded','false');}});
+
+/* 카톡 문의 버튼 — 모든 공개 페이지 오른쪽 아래에 떠 있음 */
+(function () {
+  var path = location.pathname;
+  if (/^\/(admin|c\/|v\/)/.test(path) || document.querySelector('.kakao-fab')) return;
+  var a = document.createElement('a');
+  a.className = 'kakao-fab'; a.href = 'https://open.kakao.com/o/sOmJ0eQi'; a.target = '_blank'; a.rel = 'noopener';
+  a.setAttribute('aria-label', '카카오톡으로 문의하기 (새 창)');
+  a.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c-5.1 0-9.2 3.2-9.2 7.2 0 2.6 1.7 4.8 4.3 6.1l-1 3.6c-.1.3.3.6.6.4l4.2-2.8c.4 0 .7.1 1.1.1 5.1 0 9.2-3.2 9.2-7.2S17.1 3.5 12 3.5z"/></svg><span>카톡 문의</span>';
+  document.body.appendChild(a);
+})();

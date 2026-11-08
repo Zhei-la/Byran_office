@@ -363,6 +363,19 @@ module.exports = function makePortfolio({ query, requireAdmin, isAdmin, assetVer
   });
 
   function routes(app) {
+    // 검색엔진용 사이트맵: 고정 페이지 + 공개된 포트폴리오 사례 글
+    app.get('/sitemap.xml', async (req, res) => {
+      const base = 'https://byranmk.com';
+      const pages = ['/', '/threads', '/blog', '/website', '/blog-home', '/pricing', '/portfolio', '/contact'];
+      let posts = [];
+      try { posts = await store.list(true); } catch (e) { console.error('[sitemap]', e.message); }
+      const day = (d) => { const t = Date.parse(d); return t ? new Date(t).toISOString().slice(0, 10) : ''; };
+      const urls = pages.map((u) => `  <url><loc>${base}${u}</loc></url>`)
+        .concat(posts.map((p) => `  <url><loc>${base}/portfolio/${p.id}</loc>${day(p.updatedAt) ? `<lastmod>${day(p.updatedAt)}</lastmod>` : ''}</url>`));
+      res.set('Cache-Control', 'no-cache').type('application/xml')
+        .send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>\n`);
+    });
+
     // /portfolio/ 로 들어오면 사진·글자 경로가 깨져서 목록 페이지로 보냄
     app.get('/portfolio/', (req, res, next) => (req.path === '/portfolio/' ? res.redirect(301, '/portfolio.html') : next()));
 
