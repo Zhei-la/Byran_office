@@ -607,3 +607,14 @@ a.price-row.simple:focus-visible{outline-offset:-2px}
 body:has(.q-bar:not([hidden])) .kakao-fab{bottom:calc(92px + env(safe-area-inset-bottom))}
 @media (max-width:600px){.kakao-fab{height:48px;padding:0 16px 0 13px;font-size:14px;right:14px}}
 @media print{.kakao-fab{display:none}}
+/* 관리자 계약서: 검색 · 종료 · 연장 */
+.ct-search{margin:0 0 14px}
+.ct-search input{width:100%;height:46px;padding:0 16px;border:1px solid var(--line,#d9d5cb);border-radius:6px;font:inherit;font-size:15px;background:#fff}
+.ct-search input:focus{outline:2px solid var(--ink,#181b18);outline-offset:1px}
+.stpill-end{background:#3b3d38;color:#f2efe6}
+.stpill-soon{background:#f6d9c9;color:#8a3a14}
+.ct-ended .pfa-info h3,.ct-ended .pfa-sub{opacity:.6}
+.ct-ext{font-size:13px}
+.ct-extform{grid-column:1/-1;margin-top:14px;padding:16px;border:1px dashed var(--line,#d9d5cb);border-radius:6px;display:grid;gap:10px;background:#fbfaf6}
+.ct-extrow{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:10px;font-size:14px}
+.ct-extrow input{height:42px;padding:0 12px;border:1px solid var(--line,#d9d5cb);border-radius:6px;font:inherit;background:#fff;min-width:0}

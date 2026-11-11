@@ -392,9 +392,9 @@ function makePgStore(query) {
     id: String(r.id), token: r.token, terms: r.terms || {}, body: r.body || [], our: r.our || {}, hasOurSig: !!r.has_our_sig,
     status: r.status, signer: r.signer || null, signedAt: r.signed_at ? r.signed_at.toISOString() : null,
     signedIp: r.signed_ip || '', docHash: r.doc_hash || '', viewedAt: r.viewed_at ? r.viewed_at.toISOString() : null,
-    createdAt: r.created_at.toISOString(),
+    createdAt: r.created_at.toISOString(), ext: Array.isArray(r.ext) ? r.ext : [],
   });
-  const COLS = `id, token, terms, body, our, (our_sig IS NOT NULL) AS has_our_sig, status, signer, signed_at, signed_ip, doc_hash, viewed_at, created_at`;
+  const COLS = `id, token, terms, body, our, (our_sig IS NOT NULL) AS has_our_sig, status, signer, signed_at, signed_ip, doc_hash, viewed_at, created_at, ext`;
   return {
     async init() {
       await query(`CREATE TABLE IF NOT EXISTS ct_contracts (
@@ -420,6 +420,8 @@ function makePgStore(query) {
         bin        BYTEA,
         updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
       )`);
+      // 계약 연장 기록 (서명된 계약서 본문은 그대로 두고 관리용으로만 쌓음)
+      await query(`ALTER TABLE ct_contracts ADD COLUMN IF NOT EXISTS ext JSONB NOT NULL DEFAULT '[]'::jsonb`);
     },
     async getSetting(key) {
       const { rows } = await query(`SELECT val, bin FROM ct_settings WHERE key = $1`, [key]);
@@ -437,6 +439,8 @@ function makePgStore(query) {
       return String(rows[0].id);
     },
     async remove(id) { const r = await query(`DELETE FROM ct_contracts WHERE id = $1`, [id]); return r.rowCount > 0; },
+    async byId(id) { const { rows } = await query(`SELECT ${COLS} FROM ct_contracts WHERE id = $1`, [id]); return row(rows[0]); },
+    async setExt(id, ext) { const r = await query(`UPDATE ct_contracts SET ext = $2 WHERE id = $1 AND status = 'signed'`, [id, JSON.stringify(ext)]); return r.rowCount > 0; },
     async updateTerms(id, terms, body) {
       const r = await query(`UPDATE ct_contracts SET terms = $2, body = $3 WHERE id = $1 AND status = 'sent'`, [id, JSON.stringify(terms), JSON.stringify(body)]);
       return r.rowCount > 0;
@@ -466,7 +470,7 @@ function makeFileStore(dir) {
     async init() {},
     async getSetting(key) { const s = read().settings[key]; return s ? { val: s.val, bin: unb(s.bin) } : null; },
     async setSetting(key, val, bin) { const d = read(); d.settings[key] = { val, bin: b64(bin) }; write(d); },
-    async list() { return read().items.slice().reverse().map(pub); },
+    async list() { return read().items.slice().reverse().map((c) => pub({ ext: [], ...c })); },
     async byToken(token) { return pub(read().items.find((c) => c.token === token)); },
     async create(c) {
       const d = read(); const id = String(d.items.reduce((m, x) => Math.max(m, +x.id), 0) + 1);
@@ -475,6 +479,8 @@ function makeFileStore(dir) {
     },
     async updateTerms(id, terms, body) { const d = read(); const c = d.items.find((x) => x.id === String(id)); if (!c || c.status !== 'sent') return false; c.terms = terms; c.body = body; write(d); return true; },
     async remove(id) { const d = read(); const n = d.items.length; d.items = d.items.filter((x) => x.id !== String(id)); write(d); return d.items.length !== n; },
+    async byId(id) { const c = read().items.find((x) => x.id === String(id)); return c ? pub({ ext: [], ...c }) : null; },
+    async setExt(id, ext) { const d = read(); const c = d.items.find((x) => x.id === String(id)); if (!c || c.status !== 'signed') return false; c.ext = ext; write(d); return true; },
     async markViewed(token) { const d = read(); const c = d.items.find((x) => x.token === token); if (c && !c.viewedAt) { c.viewedAt = new Date().toISOString(); write(d); } },
     async sign(token, s) {
       const d = read(); const c = d.items.find((x) => x.token === token); if (!c || c.status !== 'sent') return false;
@@ -793,7 +799,7 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const host = req.get('host');
         const items = (await store.list()).map((c) => ({
           id: c.id, url: `${req.protocol}://${host}/c/${c.token}`, terms: c.terms, status: c.status, signer: c.signer, hasOurSig: c.hasOurSig,
-          createdAt: c.createdAt, viewedAt: c.viewedAt, signedAt: c.signedAt, signedIp: c.signedIp,
+          createdAt: c.createdAt, viewedAt: c.viewedAt, signedAt: c.signedAt, signedIp: c.signedIp, ext: c.ext || [],
         }));
         res.json({ ok: true, items, our: await getOur(), hasOurSig: !!(await getOurSig()) });
       } catch (e) { console.error('[ct list]', e.message); fail(res, 500, '목록을 불러오지 못했어요.'); }
@@ -815,6 +821,29 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const ok = await store.updateTerms(req.params.id, t, buildBody(t, await getOur()));
         return ok ? res.json({ ok: true }) : fail(res, 409, '이미 서명이 끝났거나 없는 계약서예요.');
       } catch (e) { console.error('[ct edit]', e.message); fail(res, 500, '저장하지 못했어요.'); }
+    });
+    // 계약 연장: 서명된 계약서에 새 종료일을 기록 (계약서 본문·서명은 바뀌지 않음)
+    app.post('/api/admin/contracts/:id(\\d+)/extend', requireAdmin, express.json({ limit: '4kb' }), async (req, res) => {
+      const to = clip(req.body && req.body.end, 10), note = clip(req.body && req.body.note, 100);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(to) || isNaN(Date.parse(to))) return fail(res, 400, '연장할 종료일을 골라주세요.');
+      try {
+        const c = await store.byId(req.params.id);
+        if (!c || c.status !== 'signed') return fail(res, 409, '서명이 끝난 계약서만 연장할 수 있어요.');
+        const ext = Array.isArray(c.ext) ? c.ext.slice() : [];
+        const from = ext.length ? ext[ext.length - 1].to : (c.terms && c.terms.end) || '';
+        if (from && to <= from) return fail(res, 400, `지금 종료일(${from})보다 뒤 날짜를 골라주세요.`);
+        ext.push({ from, to, note, at: new Date().toISOString() });
+        await store.setExt(c.id, ext.slice(-50));
+        res.json({ ok: true, ext });
+      } catch (e) { console.error('[ct extend]', e.message); fail(res, 500, '연장하지 못했어요.'); }
+    });
+    app.delete('/api/admin/contracts/:id(\\d+)/extend', requireAdmin, async (req, res) => {
+      try {
+        const c = await store.byId(req.params.id);
+        if (!c || c.status !== 'signed' || !(c.ext || []).length) return fail(res, 409, '취소할 연장 기록이 없어요.');
+        const ext = c.ext.slice(0, -1); await store.setExt(c.id, ext);
+        res.json({ ok: true, ext });
+      } catch (e) { console.error('[ct extend undo]', e.message); fail(res, 500, '연장을 취소하지 못했어요.'); }
     });
     app.delete('/api/admin/contracts/:id(\\d+)', requireAdmin, async (req, res) => {
       try { const ok = await store.remove(req.params.id); res.status(ok ? 200 : 404).json({ ok }); }

@@ -576,6 +576,8 @@
     }
     L.push((t.kind === 'blog' ? '블로그 ' + (t.account || '미입력') : '스레드 계정 ' + (t.account ? '@' + t.account : (sg.account ? '@' + String(sg.account).replace(/^@+/, '') : '미입력'))));
     L.push('계약 기간 ' + (t.start || '') + ' ~ ' + (t.end || '') + (t.months ? ' (' + t.months + '개월)' : ''));
+    (c.ext || []).forEach(function (x, i) { L.push('연장 ' + (i + 1) + ' ' + (x.from || '') + ' → ' + x.to + (x.note ? ' (' + x.note + ')' : '')); });
+    var stx = ctState(c); if (stx) L.push('상태 ' + (stx.kind === 'ended' ? '계약 종료 (' + stx.end + ' 종료)' : '진행 중 (' + stx.end + '까지)'));
     if (t.testStart || t.testEnd) L.push('테스트 기간 ' + (t.testStart || '') + ' ~ ' + (t.testEnd || ''));
     L.push('총 계약금액 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '별도') + ')' + (t.priceList && t.priceList > t.priceTotal ? ' · 정상가 ' + won(t.priceList) : ''));
     L.push('발행 월 ' + (t.postsMonthly || 0) + '회 · ' + (bonus ? '총 ' + (base + bonus) + '회 (기본 ' + base + '회 + 서비스 ' + bonus + '회)' : '총 ' + base + '회'));
@@ -585,6 +587,30 @@
     L.push('계약서 ' + c.url);
     return L.join('\n');
   }
+  // 계약 종료일 = 마지막 연장 종료일 또는 계약서 종료일
+  var ctQuery = '';
+  function ctEnd(c) { var e = c.ext || []; return e.length ? e[e.length - 1].to : ((c.terms || {}).end || ''); }
+  function kstToday() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
+  function dayDiff(a, b) { return Math.round((Date.parse(a) - Date.parse(b)) / 864e5); }
+  function addMonths(ymd, n) {
+    var d = new Date(ymd + 'T00:00:00Z'); if (isNaN(d)) d = new Date(Date.now() + 9 * 3600e3);
+    var day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n);
+    var last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    d.setUTCDate(Math.min(day, last)); return d.toISOString().slice(0, 10);
+  }
+  // 진행 상태: ended(계약 종료) / soon(종료 임박) / on(진행 중) / null(기간 없는 계약)
+  function ctState(c) {
+    var t = c.terms || {}; if (c.status !== 'signed' || t.kind === 'web') return null;
+    var end = ctEnd(c); if (!end) return null;
+    var left = dayDiff(end, kstToday());
+    return { end: end, left: left, kind: left < 0 ? 'ended' : left <= 7 ? 'soon' : 'on' };
+  }
+  function ctMatch(c, q) {
+    if (!q) return true;
+    var t = c.terms || {}, sg = c.signer || {};
+    var hay = [t.client, t.account, '@' + (t.account || ''), sg.name, sg.ceo, sg.account, ctKindLabel(t)].join(' ').toLowerCase().replace(/\s+/g, '');
+    return hay.indexOf(q.toLowerCase().replace(/\s+/g, '')) >= 0;
+  }
   function ctList(flash, created) {
     ctBox.textContent = ''; ctBox.appendChild(el('p', 'adm-none', '계약서를 불러오는 중이에요…'));
     return api('GET', '/api/admin/contracts').then(function (j) { ctData = j; ctRender(flash, created); })
@@ -592,6 +618,10 @@
   }
   function ctRender(flash, created) {
     ctBox.textContent = '';
+    var sw = el('div', 'ct-search');
+    var si = el('input'); si.type = 'search'; si.placeholder = '업체명 · 계정 · 대표자 이름으로 검색'; si.value = ctQuery;
+    si.setAttribute('aria-label', '계약서 검색'); si.setAttribute('enterkeyhint', 'search');
+    sw.appendChild(si); ctBox.appendChild(sw);
     var bar = el('div', 'pfa-bar');
     var add = button('+ 새 계약서', 'btn btn-ink'); add.addEventListener('click', function () { ctNew(); });
     var our = button('우리 정보·서명'); our.addEventListener('click', ctOur);
@@ -627,13 +657,25 @@
     }
     var items = ctData.items || [];
     if (!items.length) { ctBox.appendChild(el('p', 'adm-none', '아직 만든 계약서가 없어요. "새 계약서"를 눌러 계약 조건을 적으면 고객에게 보낼 서명 링크가 생겨요.')); return; }
+    var listWrap = el('div'); ctBox.appendChild(listWrap);
+    si.addEventListener('input', function () { ctQuery = si.value.trim(); drawList(); });
+    drawList();
+    function drawList() {
+    listWrap.textContent = '';
+    var shown = items.filter(function (c) { return ctMatch(c, ctQuery); });
+    if (ctQuery) listWrap.appendChild(el('p', 'pfa-hint', '"' + ctQuery + '" 검색 결과 ' + shown.length + '건'));
+    if (!shown.length) { listWrap.appendChild(el('p', 'adm-none', '찾는 업체의 계약서가 없어요. 업체명이나 계정을 다시 확인해 주세요.')); return; }
     var list = el('div', 'pfa-list');
-    items.forEach(function (c) {
+    shown.forEach(function (c) {
       var t = c.terms || {}, signed = c.status === 'signed';
       var row = el('article', 'pfa-row ct-row');
       var info = el('div', 'pfa-info');
       var top = el('div', 'adm-top');
-      top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
+      var st = ctState(c);
+      if (st && st.kind === 'ended') { top.appendChild(el('span', 'stpill stpill-end', '계약 종료')); row.classList.add('ct-ended'); }
+      else top.appendChild(el('span', 'stpill ' + (signed ? 'stpill-contacted' : 'stpill-new'), signed ? '서명 완료' : '서명 대기'));
+      if (st && st.kind === 'soon') top.appendChild(el('span', 'stpill stpill-soon', st.left === 0 ? '오늘 종료' : '종료 D-' + st.left));
+      if ((c.ext || []).length) top.appendChild(el('span', 'stpill stpill-done', '연장 ' + c.ext.length + '회'));
       top.appendChild(el('span', 'stpill', ctKindLabel(t)));
       if (t.portfolioRequired) top.appendChild(el('span', 'stpill stpill-done', '할인가 · 포폴 동의 필수'));
       top.appendChild(el('span', 'adm-date', '만든 날 ' + fmtDate(c.createdAt)));
@@ -643,6 +685,9 @@
       info.appendChild(el('p', 'pfa-sub', t.kind === 'web'
         ? '완성 예정 ' + (t.due || '협의') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · ' + (t.payment || '')
         : (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · 월 ' + (t.postsMonthly || 0) + '회'));
+      (c.ext || []).forEach(function (x, i) {
+        info.appendChild(el('p', 'pfa-hl ct-ext', '연장 ' + (i + 1) + ' · ' + (x.from || '') + ' → ' + x.to + (x.note ? ' · ' + x.note : '') + ' (기록 ' + fmtDate(x.at) + ')'));
+      });
       if (signed) {
         var sg = c.signer || {};
         info.appendChild(el('p', 'pfa-hl', '서명 ' + fmtDate(c.signedAt) + ' · ' + (sg.ceo || '') + ' · ' + (sg.phone || '') + ' · 포트폴리오 ' + (sg.consent === 'yes' ? '동의' : '미동의')));
@@ -663,6 +708,20 @@
       var cl = button('링크 복사'); cl.addEventListener('click', function () { copyText(c.url, cl, '링크 복사'); });
       act.appendChild(cl);
       if (accOnly()) { var cac = button('계좌번호 복사'); cac.addEventListener('click', function () { copyText(accOnly(), cac, '계좌번호 복사'); }); act.appendChild(cac); }
+      if (signed && t.kind !== 'web') {
+        var exb = button(st && st.kind === 'ended' ? '계약 연장' : '연장하기', st && st.kind === 'ended' ? 'btn btn-ink btn-sm' : 'btn btn-outline btn-sm');
+        exb.addEventListener('click', function () { ctExtendForm(c, row); });
+        act.appendChild(exb);
+        if ((c.ext || []).length) {
+          var un = button('연장 취소');
+          un.addEventListener('click', function () {
+            if (!un.dataset.armed) { un.dataset.armed = '1'; un.textContent = '마지막 연장을 지울까요? 한 번 더 누르기'; setTimeout(function () { if (un.isConnected) { delete un.dataset.armed; un.textContent = '연장 취소'; } }, 4000); return; }
+            un.disabled = true;
+            api('DELETE', '/api/admin/contracts/' + c.id + '/extend').then(function () { ctList('마지막 연장 기록을 지웠어요.'); }, function () { un.disabled = false; un.textContent = '취소하지 못했어요'; });
+          });
+          act.appendChild(un);
+        }
+      }
       var del = button('삭제', 'btn btn-outline btn-sm adm-del');
       del.addEventListener('click', function () {
         if (!del.dataset.armed) {
@@ -677,7 +736,35 @@
       row.appendChild(act);
       list.appendChild(row);
     });
-    ctBox.appendChild(list);
+    listWrap.appendChild(list);
+    }
+  }
+
+  // 계약 연장 입력 (새 종료일 + 메모)
+  function ctExtendForm(c, row) {
+    var old = row.querySelector('.ct-extform'); if (old) { old.remove(); return; }
+    var t = c.terms || {}, end = ctEnd(c), months = t.months || 1;
+    var f = el('form', 'ct-extform');
+    f.appendChild(el('p', 'pfa-hint', '지금 종료일 ' + (end || '-') + ' · 새 종료일을 고르면 이 목록에 "연장"으로 기록돼요. 서명된 계약서 내용은 바뀌지 않아요.'));
+    var quick = el('div', 'pfa-adds');
+    var d = el('input'); d.type = 'date'; d.required = true; d.min = end || ''; d.value = addMonths(end || kstToday(), months);
+    [1, 3].forEach(function (n) { var q = button('+' + n + '개월'); q.addEventListener('click', function () { d.value = addMonths(end || kstToday(), n); }); quick.appendChild(q); });
+    f.appendChild(quick);
+    var n = el('input'); n.type = 'text'; n.maxLength = 100; n.placeholder = '메모 (예: 1개월 재계약 10만 원 입금 확인)';
+    var lw = el('label', 'ct-extrow'); lw.appendChild(el('span', null, '새 종료일')); lw.appendChild(d); f.appendChild(lw);
+    var lw2 = el('label', 'ct-extrow'); lw2.appendChild(el('span', null, '메모')); lw2.appendChild(n); f.appendChild(lw2);
+    var msg = el('p', 'pfa-flash'); msg.hidden = true;
+    var acts = el('div', 'pfa-adds');
+    var ok = el('button', 'btn btn-ink btn-sm', '연장 저장'); ok.type = 'submit';
+    var cancel = button('닫기'); cancel.addEventListener('click', function () { f.remove(); });
+    acts.appendChild(ok); acts.appendChild(cancel); f.appendChild(acts); f.appendChild(msg);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); ok.disabled = true;
+      api('POST', '/api/admin/contracts/' + c.id + '/extend', { end: d.value, note: n.value.trim() })
+        .then(function () { ctList((t.client || '계약') + ' 계약을 ' + d.value + '까지 연장했어요.'); },
+          function (err) { ok.disabled = false; msg.hidden = false; msg.textContent = (err && err.message && err.message !== 'auth') ? err.message : '연장하지 못했어요. 다시 시도해 주세요.'; });
+    });
+    row.appendChild(f); d.focus();
   }
 
   function ctHead(title) {
