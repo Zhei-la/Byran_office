@@ -29,6 +29,7 @@ const KINDS = {
   threads: { doc: '스레드 운영 대행 계약서', svc: '스레드 계정 운영 대행', role: '대행사', acc: '스레드 계정 아이디', accPh: '예: @byran_shop', pf: '제12조', pay: '입금이 확인되면 운영을 시작해요 (제6조).' },
   blog: { doc: '블로그 운영 대행 계약서', svc: '블로그 운영 대행', role: '대행사', acc: '블로그 주소', accPh: '예: blog.naver.com/byran', pf: '제12조', pay: '입금이 확인되면 운영을 시작해요 (제6조).' },
   web: { doc: '홈페이지 제작 계약서', svc: '홈페이지 제작', role: '제작사', acc: '', accPh: '', pf: '제10조', pay: '입금이 확인되면 작업을 시작해요 (제7조).' },
+  package: { doc: '블로그 · 스레드 운영 대행 패키지 계약서', svc: '블로그 · 스레드 운영 대행 패키지', role: '대행사', acc: '스레드 계정 아이디', accPh: '예: @byran_shop', acc2: '블로그 주소', acc2Ph: '예: blog.naver.com/byran', pf: '제12조', pay: '입금이 확인되면 운영을 시작해요 (제6조).' },
   blogHome: { doc: '홈페이지형 블로그 제작 계약서', svc: '홈페이지형 블로그 제작', role: '제작사', acc: '블로그 주소', accPh: '예: blog.naver.com/byran', pf: '제10조', pay: '입금이 확인되면 작업을 시작해요 (제7조).' },
 };
 // terms → 위 표의 한 줄 (web 은 product 로 홈페이지 / 홈페이지형 블로그를 나눔)
@@ -41,24 +42,30 @@ const DEPOSIT = '착수금 50% · 완성 후 잔금 50%';
 function cleanTerms(b) {
   b = b || {};
   const num = (v, max) => Math.max(0, Math.min(max, parseInt(String(v).replace(/[^\d]/g, ''), 10) || 0));
-  const kind = b.kind === 'blog' || b.kind === 'web' ? b.kind : 'threads';
+  const kind = b.kind === 'blog' || b.kind === 'web' || b.kind === 'package' ? b.kind : 'threads';
   const revRaw = Math.max(0, Math.min(10, parseInt(b.revisions, 10) || 0));
   return {
     kind, product: kind === 'web' ? (b.product === 'blogHome' ? 'blogHome' : 'website') : '',
     due: kind === 'web' ? clip(b.due, 10) : '', scope: kind === 'web' ? clip(b.scope, 300) : '',
     adminPage: kind === 'web' && b.adminPage === true,
     extraFee: kind === 'web' ? (b.extraFee === undefined || b.extraFee === '' || b.extraFee === null ? 10000 : num(b.extraFee, 1e8)) : 0,
-    charLimit: kind === 'blog' ? num(b.charLimit, 20000) : 0, images: kind === 'blog' ? num(b.images, 100) : 0,
+    charLimit: kind === 'blog' || kind === 'package' ? num(b.charLimit, 20000) : 0, images: kind === 'blog' || kind === 'package' ? num(b.images, 100) : 0,
     client: clip(b.client, 100), account: clip(b.account, 60).replace(/^@+/, ''),
     start: clip(b.start, 10), end: clip(b.end, 10), months: num(b.months, 60),
     testStart: clip(b.testStart, 10), testEnd: clip(b.testEnd, 10),
     priceList: num(b.priceList, 1e10), priceTotal: num(b.priceTotal, 1e10),
     vat: b.vat === '포함' ? '포함' : '별도',
     postsMonthly: num(b.postsMonthly, 1000), postsTotal: num(b.postsTotal, 100000), postsBonus: num(b.postsBonus, 100000),
-    payment: (kind === 'web' && b.payment === DEPOSIT) ? DEPOSIT : (clip(b.payment, 80) || '일시불 선결제'), firstReport: kind === 'threads' ? clip(b.firstReport, 10) : '',
+    payment: (kind === 'web' && b.payment === DEPOSIT) ? DEPOSIT : (clip(b.payment, 80) || '일시불 선결제'), firstReport: kind === 'threads' || kind === 'package' ? clip(b.firstReport, 10) : '',
     revisions: revRaw || (kind === 'web' ? 3 : 2),
     portfolioRequired: b.portfolioRequired === true, // 이벤트가: 포트폴리오 활용 동의가 할인 조건
-    pkg: kind !== 'web' ? clip(b.pkg, 60) : '', // 블로그 + 스레드 패키지 (두 계약서를 한 번에 만듦)
+    pkg: kind !== 'web' ? clip(b.pkg, 60) : '',
+    // 패키지 계약: 스레드는 위 postsMonthly·postsTotal, 블로그는 아래 값. 금액은 서비스별로 나눠 적어 환불 기준으로 씀
+    ...(kind === 'package' ? {
+      pkgPlan: b.pkgPlan === 'standard' ? 'standard' : 'basic', blogAccount: clip(b.blogAccount, 60),
+      bPostsMonthly: num(b.bPostsMonthly, 1000), bPostsTotal: num(b.bPostsTotal, 100000),
+      bPriceList: num(b.bPriceList, 1e10), bPrice: num(b.bPrice, 1e10), thPriceList: num(b.thPriceList, 1e10), thPrice: num(b.thPrice, 1e10),
+    } : {}),
   };
 }
 function cleanOur(b) {
@@ -70,8 +77,9 @@ function cleanOur(b) {
 // 계약서 본문 (만들 때 한 번 정해서 저장 — 나중에 문구를 바꿔도 이미 보낸 계약서는 그대로)
 function buildBody(t, our) {
   const k = (t && t.kind) || 'threads';
+  if (k === 'package') return buildPackage(t, our);
   const body = k === 'blog' ? buildBlog(t, our) : k === 'web' ? buildWeb(t, our) : buildThreads(t, our);
-  // 패키지: 계약 정보 표에 패키지 줄 추가 (블로그·스레드 계약서를 함께 맺는다는 표시)
+  // (예전 방식) 계약 정보 표에 패키지 줄 추가
   if (t && t.pkg && k !== 'web') {
     const tb = body.find((b) => b.t === 'table');
     if (tb) tb.rows.splice(1, 0, ['패키지', `${t.pkg} · ${k === 'blog' ? '스레드' : '블로그'} 운영 대행 계약서와 함께 맺는 패키지 계약`]);
@@ -273,6 +281,107 @@ function buildBlog(t, our) {
     OL('업무를 시작하기 전에 갑이 해지하면 을은 받은 금액을 전액 돌려준다.',
       '업무를 시작한 뒤 갑의 사정으로 해지하면, 을은 해지를 알린 날까지 발행하지 않은 기본 발행 횟수만큼(총 계약금액 ÷ 기본 발행 횟수 × 남은 기본 발행 횟수) 돌려준다.',
       t.postsBonus ? '발행 횟수는 기본 발행 횟수부터 차감하고, 서비스 횟수는 기본 발행 횟수를 모두 발행한 뒤부터 차감한다. 서비스 횟수는 무료로 더 드리는 횟수라 환불 계산에 넣지 않는다.' : '',
+      '을의 사정으로 업무를 계속할 수 없으면, 을은 제2항과 같은 방법으로 남은 기본 발행 횟수만큼 돌려준다.',
+      '한쪽이 계약을 어기고 상대방이 고쳐 달라고 알린 뒤 7일 안에 고치지 않으면, 상대방은 계약을 해지할 수 있다.',
+      '환불은 해지를 알린 날부터 7일 안에 갑의 계좌로 한다.'),
+    H('제15조 재계약'),
+    P('갑과 을은 계약이 끝나기 일주일 전까지 재계약 여부를 협의한다. 따로 합의하지 않으면 계약은 자동으로 연장되지 않고 종료일에 끝난다.'),
+    H('제16조 손해배상'),
+    P('갑과 을은 고의나 과실로 상대방에게 손해를 주면 그 손해를 배상한다. 단, 을의 고의나 중대한 과실이 아닌 경우 을의 배상 책임은 갑이 이 계약으로 지급한 금액을 넘지 않는다.'),
+    H('제17조 분쟁 해결과 기타'),
+    OL('이 계약에 없는 내용이나 해석이 다른 내용은 갑과 을이 협의해 정한다.',
+      '협의로 해결되지 않는 분쟁은 민사소송법에 따른 관할 법원에서 해결한다.',
+      '카카오톡 등으로 안내한 내용과 이 계약서가 다르면 이 계약서를 따른다. 계약 내용을 바꿀 때는 갑과 을이 글로(카카오톡 포함) 합의한다.'),
+    H('서명'),
+    P('이 계약을 증명하기 위해 갑과 을은 아래에 전자서명하고, 서명이 끝난 계약서를 각자 저장해 보관한다.'),
+  ];
+}
+
+/* ---------- 블로그 + 스레드 패키지 (계약서 한 장) ---------- */
+function buildPackage(t, our) {
+  const bBase = t.bPostsTotal || (t.bPostsMonthly * (t.months || 1));
+  const tBase = t.postsTotal || (t.postsMonthly * (t.months || 1));
+  const rows = [
+    ['서비스', '블로그 운영 대행 + 스레드 계정 운영 대행 (인스타그램 운영은 포함하지 않음)'],
+  ];
+  if (t.pkg) rows.push(['패키지', t.pkg]);
+  rows.push(['대상 블로그', t.blogAccount || '갑이 서명할 때 입력']);
+  rows.push(['대상 스레드 계정', t.account ? '@' + t.account : '갑이 서명할 때 입력']);
+  rows.push(['계약 기간', `${ymd(t.start)} ~ ${ymd(t.end)}${t.months ? ` (${t.months}개월)` : ''}`]);
+  rows.push(['블로그 발행', `월 ${t.bPostsMonthly}회, 계약 기간 총 ${bBase}회${t.charLimit ? ` · 1편 ${t.charLimit.toLocaleString('ko-KR')}자 이내` : ''}${t.images ? ` · 이미지 ${t.images}장 이상` : ''}`]);
+  rows.push(['스레드 발행', `월 ${t.postsMonthly}회, 계약 기간 총 ${tBase}회`]);
+  if (t.priceList && t.priceList > t.priceTotal) {
+    rows.push(['정상가', `${won(t.priceList)}${t.months ? ` (${t.months}개월)` : ''}`]);
+    rows.push(['할인 금액', `${won(t.priceList - t.priceTotal)}${t.months >= 3 ? ' (패키지 할인 포함)' : ''}`]);
+  }
+  rows.push(['총 계약금액', `${won(t.priceTotal)} (부가세 ${t.vat})`]);
+  rows.push(['서비스별 금액', `블로그 ${won(t.bPrice)} + 스레드 ${won(t.thPrice)} (환불 계산 기준)`]);
+  if (bBase && tBase) rows.push(['1회 금액', `블로그 ${won(Math.round(t.bPrice / bBase))} · 스레드 ${won(Math.round(t.thPrice / tBase))} (서비스별 금액 ÷ 기본 발행 횟수)`]);
+  rows.push(['결제 방식', t.payment]);
+  if (t.portfolioRequired) rows.push(['할인 조건', '포트폴리오 활용 동의 (제12조)']);
+  const ar = accRow(our); if (ar) rows.push(ar);
+  if (t.firstReport) rows.push(['첫 주간 보고', withDay(t.firstReport)]);
+  return [
+    P(`${t.client || '아래 서명란의 업체'}(이하 "갑")와 ${our.name}(이하 "을")는 갑의 블로그와 스레드 계정 운영 대행(패키지)에 관하여 다음과 같이 계약을 맺는다.`),
+    H('제1조 목적'),
+    P('이 계약은 을이 갑의 블로그와 스레드(Threads) 계정을 함께 운영 대행하는 데 필요한 업무 범위, 대금, 권리와 의무를 정하는 것을 목적으로 한다.'),
+    H('제2조 계약 정보'),
+    { t: 'table', rows },
+    H('제3조 업무 범위'),
+    P('을이 맡는 업무는 다음과 같다.'),
+    OL('블로그: 업종과 지역에 맞는 검색 키워드 기획, 원고 작성과 이미지 구성, 글 발행과 발행 목록 정리',
+      '스레드: 글 기획과 작성, 발행, 프로필 소개글과 고정글 정리',
+      '보고: 스레드 주간 보고서, 블로그와 스레드를 함께 담은 월간 리포트'),
+    P('다음은 따로 합의하지 않으면 포함하지 않는다: 인스타그램 운영, 유료 광고비, 사진·영상 촬영, 체험단·기자단 모집, 댓글·이웃 관리와 DM·문의 응대, 블로그 디자인(홈페이지형 블로그 제작은 따로 계약).'),
+    P(`원고 수정은 발행 전 글 한 건당 ${t.revisions}회까지 포함한다. 처음 협의한 운영 방향과 다른 전면 재작성이나 반복되는 추가 수정은 따로 협의한다.`),
+    H('제4조 발행 일정'),
+    OL('을은 제2조에서 정한 블로그와 스레드의 월 발행 횟수를 기준으로 한 달 동안 나눠 발행하며, 발행 날짜와 시간은 콘텐츠와 계정 상황에 따라 조정할 수 있다. 특정 날짜의 발행 횟수는 보장하지 않는다.',
+      '갑이 요청하면 첫 1주일은 글을 갑에게 먼저 보여주고 확인을 받은 뒤 발행한다.',
+      '갑은 직접 글을 올릴 수 있으며, 을이 발행하는 글과 몰리지 않도록 미리 알려 주는 것을 권장한다. 스레드 글 사이 간격은 3시간 이상을 권장한다.',
+      '갑이 알리고 싶은 사진이나 소식은 그때그때 을에게 보내고, 을은 블로그와 스레드 발행 일정에 반영한다.'),
+    H('제5조 보고'),
+    OL('을은 매주 화요일 지난주 스레드 조회수, 반응, 팔로워 변화와 블로그 발행 현황을 담은 주간 보고서를 보낸다.',
+      '을은 한 달이 끝날 때마다 블로그(발행 글 목록, 조회수·유입 경로)와 스레드 결과를 담은 월간 리포트를 보낸다.'),
+    H('제6조 대금 지급'),
+    OL('갑은 제2조의 총 계약금액을 을이 알려준 계좌로 제2조의 결제 방식에 따라 미리 입금한다.',
+      '을은 계약서 서명과 대금 입금이 모두 확인된 뒤 업무를 시작한다.',
+      '패키지 할인은 블로그와 스레드를 함께 계약하는 조건으로 적용된 금액이며, 제2조의 서비스별 금액에 반영되어 있다.',
+      '갑이 요청하면 을은 세금계산서나 현금영수증 같은 증빙 서류를 발행한다.'),
+    H('제7조 갑의 협조'),
+    OL('갑은 매장·상품 사진, 가격, 영업시간, 이벤트 소식처럼 글에 필요한 자료를 을에게 제공한다.',
+      '갑은 피해야 할 표현과 꼭 넣어야 할 내용을 계약 초기에 을에게 알린다.',
+      '갑의 자료 제공이나 글 확인이 늦어져 예정된 발행이 어려운 경우, 이는 을의 발행 누락으로 보지 않는다. 이 경우 발행 일정이나 계약 기간은 서로 협의해 조정한다.'),
+    H('제8조 계정 정보와 보안'),
+    OL('갑은 블로그와 스레드 운영에 필요한 로그인 정보나 접근 권한을 을에게 제공한다. 전달 방법은 을이 따로 안내하며, 비밀번호를 전달할 때는 계약 기간에만 쓸 비밀번호로 바꿔 주는 것을 권장한다.',
+      '새 기기 로그인 확인이나 2단계 인증이 필요하면 갑은 이에 협조한다.',
+      '을은 계정 정보를 이 계약의 업무에만 쓰고, 메일·카페·결제 같은 다른 서비스와 갑의 개인 정보, 인스타그램 게시물과 설정은 건드리지 않는다. 계정 정보를 따로 저장하거나 제3자에게 알리지 않는다.',
+      '계약이 끝나면 갑은 비밀번호를 다시 바꾸고, 을은 가지고 있던 계정 정보를 지운다.'),
+    H('제9조 성과'),
+    OL('을은 계약 기간 동안 성실하게 업무를 수행하되, 방문자 수, 검색 순위(상위 노출), 팔로워, 조회수, 문의, 매출 같은 결과를 보장하지 않는다.',
+      '검색 노출과 게시물 조회수는 검색 정책과 플랫폼 알고리즘, 이용자 반응에 따라 달라지며, 특정 키워드나 게시물의 노출도 보장하지 않는다.',
+      '기대한 성과가 나오지 않았다는 사유만으로는 환불을 요구할 수 없다. 단, 을이 제2조의 발행 횟수를 지키지 못한 경우는 제14조를 따른다.'),
+    H('제10조 광고 표현'),
+    OL('갑이 제공한 제품·서비스 정보(성분, 효능, 가격, 인증, 후기 등)가 사실인지에 대한 책임은 갑에게 있다.',
+      '을은 업종별 광고 규정에 어긋날 수 있는 표현을 피하도록 노력하고, 문제가 될 수 있는 표현은 발행 전에 갑에게 알린다.',
+      '갑이 제공하거나 직접 요청한 사실관계, 효능, 인증, 후기, 가격 등의 정보로 생긴 문제는 갑이 책임진다. 다만 을의 고의나 과실로 생긴 문제는 그렇지 않다.',
+      '고객 얼굴, 후기 캡처, 타인의 사진은 갑이 사용 동의를 받은 것만 제공한다.'),
+    H('제11조 플랫폼 정책'),
+    OL('을은 블로그 서비스(네이버 등)와 스레드(Meta)의 운영 정책을 지키며 업무를 수행한다.',
+      '검색·노출 정책 변경, 글 누락, 오류, 계정 제한·정지처럼 을의 고의나 중대한 과실이 없는 사유로 생긴 손해는 을이 책임지지 않는다.',
+      '위와 같은 사유로 업무가 멈추면 갑과 을은 남은 기간과 발행 횟수를 협의해 조정한다.'),
+    H('제12조 게시물 권리와 포트폴리오'),
+    OL('을이 작성해 갑의 블로그와 스레드에 발행한 글의 권리는 대금을 모두 지급한 때부터 갑에게 있다. 계약이 끝나도 갑은 그 글을 계속 쓸 수 있다.',
+      '갑이 제공한 사진·자료의 권리는 갑에게 있으며, 을은 이 계약의 업무에만 쓴다. 을이 따로 넣는 이미지는 상업적으로 쓸 수 있는 것만 쓴다.',
+      t.portfolioRequired
+        ? '이 계약은 갑이 포트폴리오 활용에 동의하는 조건으로 할인된 금액이 적용된 계약이다. 갑은 을이 운영 결과(캡처 화면, 수치)를 을의 포트폴리오에 쓰는 것에 동의하며, 이때 블로그·계정 이름과 개인정보는 가린다.'
+        : '을은 갑이 동의한 경우에만 운영 결과(캡처 화면, 수치)를 을의 포트폴리오에 쓸 수 있고, 이때 블로그·계정 이름과 개인정보는 가린다.'),
+    { t: 'consent' },
+    H('제13조 비밀 유지'),
+    P('갑과 을은 계약을 하며 알게 된 상대방의 계정 정보, 매출, 고객 정보, 계약 금액을 상대방 동의 없이 제3자에게 알리지 않는다. 이 의무는 계약이 끝난 뒤에도 유지된다.'),
+    H('제14조 중도 해지와 환불'),
+    OL('업무를 시작하기 전에 갑이 해지하면 을은 받은 금액을 전액 돌려준다.',
+      '업무를 시작한 뒤 갑의 사정으로 해지하면, 을은 블로그와 스레드 각각 해지를 알린 날까지 발행하지 않은 기본 발행 횟수만큼(서비스별 금액 ÷ 기본 발행 횟수 × 남은 기본 발행 횟수) 돌려준다.',
+      '갑은 블로그나 스레드 중 하나만 해지할 수 있으며, 이 경우 해지한 서비스만 제2항과 같은 방법으로 계산하고 나머지 서비스는 계약대로 이어간다.',
       '을의 사정으로 업무를 계속할 수 없으면, 을은 제2항과 같은 방법으로 남은 기본 발행 횟수만큼 돌려준다.',
       '한쪽이 계약을 어기고 상대방이 고쳐 달라고 알린 뒤 7일 안에 고치지 않으면, 상대방은 계약을 해지할 수 있다.',
       '환불은 해지를 알린 날부터 7일 안에 갑의 계좌로 한다.'),
@@ -584,6 +693,7 @@ ${inapp}</div>`;
 <div class="ct-grid">
 <div class="field"><label for="ctName">상호 *</label><input id="ctName" name="name" maxlength="100" required value="${esc(c.terms.client)}"></div>
 ${c.terms.account || !K.acc ? '' : `<div class="field"><label for="ctAcc">${esc(K.acc)} *</label><input id="ctAcc" name="account" maxlength="60" required placeholder="${esc(K.accPh)}" data-msg="${esc(K.acc)}를 적어주세요." autocapitalize="off" autocomplete="off"></div>`}
+${c.terms.blogAccount || !K.acc2 ? '' : `<div class="field"><label for="ctAcc2">${esc(K.acc2)} *</label><input id="ctAcc2" name="account2" maxlength="60" required placeholder="${esc(K.acc2Ph)}" data-msg="${esc(K.acc2)}를 적어주세요." autocapitalize="off" autocomplete="off"></div>`}
 <div class="field"><label for="ctCeo">대표자 성함 *</label><input id="ctCeo" name="ceo" maxlength="50" required autocomplete="name"></div>
 <div class="field"><label for="ctBiz">사업자등록번호 (없으면 비워두세요)</label><input id="ctBiz" name="bizno" maxlength="20" inputmode="numeric"></div>
 <div class="field"><label for="ctPhone">연락처 *</label><input id="ctPhone" name="phone" maxlength="40" required inputmode="tel" autocomplete="tel"></div>
@@ -788,7 +898,9 @@ module.exports = function makeContracts({ query, requireAdmin, isAdmin, assetVer
         const acc = clip(b.account, 60).replace(/^@+/, '').trim();
         const K = kindOf(c.terms);
         if (K.acc && !c.terms.account && !acc) return fail(res, 400, `${K.acc}를 적어주세요.`);
-        const terms = { ...c.terms, client: c.terms.client || signer.name, account: c.terms.account || acc };
+        const acc2 = clip(b.account2, 60).trim();
+        if (K.acc2 && !c.terms.blogAccount && !acc2) return fail(res, 400, `${K.acc2}를 적어주세요.`);
+        const terms = { ...c.terms, client: c.terms.client || signer.name, account: c.terms.account || acc, ...(K.acc2 ? { blogAccount: c.terms.blogAccount || acc2 } : {}) };
         c.terms = terms; c.body = buildBody(terms, c.our);
         const hash = sha(JSON.stringify({ terms: c.terms, body: c.body, our: c.our, ourSig: ourSig ? sha(ourSig) : '', signer, sig: sha(sig), signedAt: signedAt.toISOString() }));
         const ok = await store.sign(token, { signer, sig, signedAt, ip: req.ip, ua: clip(req.get('user-agent'), 300), hash, our: c.our, body: c.body, ourSig, terms: c.terms });

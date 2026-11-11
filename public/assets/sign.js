@@ -105,6 +105,7 @@
     var need = [['name', '상호를 적어주세요.'], ['ceo', '대표자 성함을 적어주세요.'], ['phone', '연락처를 적어주세요.'], ['addr', '주소를 적어주세요.']];
     for (var i = 0; i < need.length; i++) if (!v(need[i][0])) return bad(need[i][1], form.elements[need[i][0]]);
     if (form.elements.account && !v('account')) return bad(form.elements.account.getAttribute('data-msg') || '계정 정보를 적어주세요.', form.elements.account);
+    if (form.elements.account2 && !v('account2')) return bad(form.elements.account2.getAttribute('data-msg') || '블로그 주소를 적어주세요.', form.elements.account2);
     var consent = form.querySelector('input[name="consent"]:checked');
     if (!consent) {
       // 동의 칸을 빨갛게 표시하고 그 안에 안내를 띄운 뒤 그 자리로 이동
@@ -127,7 +128,7 @@
     var btn = form.querySelector('.ct-submit'); btn.disabled = true; st.textContent = '저장하는 중…';
     fetch('/api/c/' + encodeURIComponent(form.getAttribute('data-token')) + '/sign', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-      body: JSON.stringify({ account: form.elements.account ? v('account') : '', name: v('name'), ceo: v('ceo'), bizno: v('bizno'), phone: v('phone'), addr: v('addr'), consent: consent.value, agree: true, sig: pad.toPng() })
+      body: JSON.stringify({ account: form.elements.account ? v('account') : '', account2: form.elements.account2 ? v('account2') : '', name: v('name'), ceo: v('ceo'), bizno: v('bizno'), phone: v('phone'), addr: v('addr'), consent: consent.value, agree: true, sig: pad.toPng() })
     }).then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { r: r, j: j }; }); })
       .then(function (x) {
         if (x.j.ok) { st.textContent = '서명했어요. 계약서를 다시 불러올게요…'; window.location.reload(); return; }
