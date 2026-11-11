@@ -202,7 +202,7 @@
         var list = [];
         if (on('blog')) {
           var m = PRICE.blog[state.blogPlan];
-          list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월', price: m * state.blogMonths });
+          list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월' + (state.blogMonths === 3 ? ' · 5만 원 할인' : ''), price: m * state.blogMonths - (state.blogMonths === 3 ? 5 : 0) });
         }
         if (on('threads')) list.push({ name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
@@ -224,7 +224,7 @@
         linesEl.textContent = ''; list.forEach(function (it) { linesEl.appendChild(li(it)); });
         emptyEl.hidden = list.length > 0;
         totalEl.textContent = tw; if (barTotal) barTotal.textContent = tw;
-        var sb = card('blog'); if (sb) sb.querySelector('output').textContent = state.blogMonths + '개월';
+        var sb = card('blog'); if (sb) sb.querySelectorAll('[data-months]').forEach(function (x) { x.setAttribute('aria-pressed', +x.getAttribute('data-months') === state.blogMonths ? 'true' : 'false'); });
         if (summary) {
           summary.textContent = '';
           if (!list.length) {
@@ -247,8 +247,8 @@
         } else if (b.hasAttribute('data-count')) {
           b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
           state.threadsCount = b.getAttribute('data-count');
-        } else if (b.hasAttribute('data-step')) {
-          state.blogMonths = Math.min(12, Math.max(1, state.blogMonths + parseInt(b.getAttribute('data-step'), 10)));
+        } else if (b.hasAttribute('data-months')) {
+          state.blogMonths = parseInt(b.getAttribute('data-months'), 10) === 3 ? 3 : 1;
         }
         render();
       });
