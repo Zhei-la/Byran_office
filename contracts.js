@@ -58,6 +58,7 @@ function cleanTerms(b) {
     payment: (kind === 'web' && b.payment === DEPOSIT) ? DEPOSIT : (clip(b.payment, 80) || '일시불 선결제'), firstReport: kind === 'threads' ? clip(b.firstReport, 10) : '',
     revisions: revRaw || (kind === 'web' ? 3 : 2),
     portfolioRequired: b.portfolioRequired === true, // 이벤트가: 포트폴리오 활용 동의가 할인 조건
+    pkg: kind !== 'web' ? clip(b.pkg, 60) : '', // 블로그 + 스레드 패키지 (두 계약서를 한 번에 만듦)
   };
 }
 function cleanOur(b) {
@@ -69,9 +70,13 @@ function cleanOur(b) {
 // 계약서 본문 (만들 때 한 번 정해서 저장 — 나중에 문구를 바꿔도 이미 보낸 계약서는 그대로)
 function buildBody(t, our) {
   const k = (t && t.kind) || 'threads';
-  if (k === 'blog') return buildBlog(t, our);
-  if (k === 'web') return buildWeb(t, our);
-  return buildThreads(t, our);
+  const body = k === 'blog' ? buildBlog(t, our) : k === 'web' ? buildWeb(t, our) : buildThreads(t, our);
+  // 패키지: 계약 정보 표에 패키지 줄 추가 (블로그·스레드 계약서를 함께 맺는다는 표시)
+  if (t && t.pkg && k !== 'web') {
+    const tb = body.find((b) => b.t === 'table');
+    if (tb) tb.rows.splice(1, 0, ['패키지', `${t.pkg} · ${k === 'blog' ? '스레드' : '블로그'} 운영 대행 계약서와 함께 맺는 패키지 계약`]);
+  }
+  return body;
 }
 const H = (x) => ({ t: 'h', x }), P = (x) => ({ t: 'p', x }), OL = (...items) => ({ t: 'ol', items: items.filter(Boolean) });
 // 정상가·할인·총액 줄 (공통)

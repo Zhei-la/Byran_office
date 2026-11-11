@@ -654,6 +654,18 @@
       ctBox.appendChild(w);
     }
     if (flash) ctBox.appendChild(el('p', 'pfa-flash', flash));
+    if (ctPkgDone) {
+      var pd = ctPkgDone; ctPkgDone = null;
+      var pbx = el('div', 'ct-made');
+      pbx.appendChild(el('h3', null, '패키지 계약서 링크 2개가 만들어졌어요'));
+      pbx.appendChild(el('p', 'pfa-hint', '아래 문구 하나에 블로그·스레드 계약서 링크가 같이 들어가 있어요. 고객이 둘 다 서명하면 목록에서 각각 "서명 완료"로 바뀌어요.'));
+      pbx.appendChild(el('pre', 'ct-pre', ctPkgMsg(pd)));
+      var pa = el('div', 'pfa-adds');
+      var pcm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); pcm.addEventListener('click', function () { copyText(ctPkgMsg(pd), pcm, '카톡 문구 복사'); });
+      pa.appendChild(pcm);
+      if (accOnly()) { var pca = button('계좌번호만 복사'); pca.addEventListener('click', function () { copyText(accOnly(), pca, '계좌번호만 복사'); }); pa.appendChild(pca); }
+      pbx.appendChild(pa); ctBox.appendChild(pbx);
+    }
     if (created) {
       var box = el('div', 'ct-made');
       box.appendChild(el('h3', null, '서명 링크가 만들어졌어요'));
@@ -808,8 +820,8 @@
   function digits(s) { return parseInt(String(s || '').replace(/[^\d]/g, ''), 10) || 0; }
 
   // 계약서 종류
-  var CT_KINDS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['web', '홈페이지 · 홈페이지형 블로그 제작']];
-  function ctKindLabel(t) { t = t || {}; if (t.kind === 'blog') return '블로그 운영 대행'; if (t.kind === 'web') return t.product === 'blogHome' ? '홈페이지형 블로그 제작' : '홈페이지 제작'; return '스레드 운영 대행'; }
+  var CT_KINDS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['package', '블로그 + 스레드 패키지'], ['web', '홈페이지 · 홈페이지형 블로그 제작']];
+  function ctKindLabel(t) { t = t || {}; if (t.pkg) return (t.kind === 'blog' ? '블로그' : '스레드') + ' · ' + t.pkg; if (t.kind === 'blog') return '블로그 운영 대행'; if (t.kind === 'web') return t.product === 'blogHome' ? '홈페이지형 블로그 제작' : '홈페이지 제작'; return '스레드 운영 대행'; }
   function ctKindPicker(src, K) {
     var w = el('div', 'pfa-field wide'); w.appendChild(el('label', null, '계약서 종류'));
     var row = el('div', 'ct-kinds');
@@ -823,6 +835,84 @@
     if (src && src.terms && (src.terms.kind || 'threads') !== K) w.appendChild(el('p', 'pfa-hint', '종류를 바꾸면 저장할 때 계약서 내용이 새 종류로 바뀌어요.'));
     return w;
   }
+  // 블로그 + 스레드 패키지: 블로그·스레드 계약서 두 장을 같은 기간으로 한 번에 만들고 링크 두 개를 카톡 문구 하나로
+  // 이벤트 기간 기준: 스레드 월 10만 원, 3개월 패키지는 스레드 금액에서 10만 원 할인
+  var PKG = {
+    basic: { name: 'BASIC', posts: 12, chars: 1500, imgs: 7, blog: { 1: [300000, 200000], 3: [900000, 550000] } },
+    standard: { name: 'STANDARD', posts: 20, chars: 2000, imgs: 10, blog: { 1: [400000, 300000], 3: [1200000, 850000] } }
+  };
+  var PKG_TH = { 1: { posts: 20, list: 200000, total: 100000 }, 3: { posts: 30, list: 300000, total: 200000 } };
+  function ctPkg(src) {
+    ctBox.textContent = '';
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.appendChild(ctHead('패키지 계약서 (블로그 + 스레드)'));
+    f.appendChild(ctKindPicker(src, 'package'));
+    f.appendChild(el('p', 'pfa-hint', '블로그 계약서와 스레드 계약서가 같은 기간으로 한 번에 2장 만들어져요. 고객은 링크 두 개를 각각 열어 서명해요. 3개월은 패키지 할인 10만 원이 스레드 금액에 들어가요.'));
+    var g = el('div', 'pfa-grid');
+    var plan = el('select'); [['basic', 'BASIC 패키지 (블로그 월 12회 + 스레드)'], ['standard', 'STANDARD 패키지 (블로그 월 20회 + 스레드)']].forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; plan.appendChild(x); });
+    var per = el('select'); [['3', '3개월 · 10만 원 할인'], ['1', '1개월 · 추가 할인 없음']].forEach(function (o) { var x = el('option', null, o[1]); x.value = o[0]; per.appendChild(x); });
+    var nm0 = new Date();
+    var start = ctInput('date', iso(new Date(nm0.getFullYear(), nm0.getMonth() + 1, 1)));
+    var client = ctInput('text', '', '예: 행컵 안산한양대점'); client.maxLength = 100;
+    var thAcc = ctInput('text', '', '예: hangcup_ansan (@ 없이)'); thAcc.maxLength = 60;
+    var blAcc = ctInput('text', '', '예: blog.naver.com/아이디'); blAcc.maxLength = 60;
+    var vat = ctSelect(['별도', '포함'], '포함');
+    var pfW = el('label', 'pfa-check ct-pfreq'); var pfReq = el('input'); pfReq.type = 'checkbox'; pfReq.checked = true;
+    pfW.appendChild(pfReq); pfW.appendChild(el('span', null, '할인가 계약 · 포트폴리오 활용 동의 필수'));
+    g.appendChild(ctField('패키지 *', plan)); g.appendChild(ctField('기간 *', per));
+    g.appendChild(ctField('시작일 *', start, '두 계약서가 같은 날 시작해요.'));
+    g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(ctField('스레드 계정', thAcc, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(ctField('블로그 주소', blAcc, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(ctField('부가세', vat));
+    f.appendChild(g);
+    var pfBox = el('div', 'pfa-field wide'); pfBox.appendChild(pfW); f.appendChild(pfBox);
+    var sum = el('div', 'ct-made ct-ask'); f.appendChild(sum);
+    function calc() {
+      var P = PKG[plan.value], m = +per.value, b = P.blog[m], th = PKG_TH[m], sd = parseD(start.value);
+      var ed = sd ? iso(new Date(sd.getFullYear(), sd.getMonth() + m, sd.getDate() - 1)) : '';
+      var r = sd ? new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() + 6) : null; if (r) while (r.getDay() !== 2) r.setDate(r.getDate() + 1);
+      var label = P.name + ' 패키지 ' + m + '개월' + (m === 3 ? ' (10만 원 할인)' : '');
+      var common = { client: client.value, start: start.value, end: ed, months: m, vat: vat.value, payment: '일시불 선결제', portfolioRequired: pfReq.checked, pkg: label };
+      var blog = Object.assign({ kind: 'blog', account: blAcc.value, priceList: b[0], priceTotal: b[1], postsMonthly: P.posts, postsTotal: P.posts * m, postsBonus: 0, charLimit: P.chars, images: P.imgs, revisions: 2 }, common);
+      var thr = Object.assign({ kind: 'threads', account: thAcc.value, priceList: th.list, priceTotal: th.total, postsMonthly: th.posts, postsTotal: th.posts * m, postsBonus: 0, firstReport: r ? iso(r) : '', revisions: 2 }, common);
+      return { blog: blog, thr: thr, total: b[1] + th.total, label: label, end: ed };
+    }
+    function show() {
+      var c = calc(); sum.textContent = '';
+      sum.appendChild(el('h3', null, c.label + ' · 합계 ' + won(c.total)));
+      sum.appendChild(el('p', 'pfa-sub', '블로그 ' + won(c.blog.priceTotal) + ' (월 ' + c.blog.postsMonthly + '회 · 총 ' + c.blog.postsTotal + '회) + 스레드 ' + won(c.thr.priceTotal) + ' (월 ' + c.thr.postsMonthly + '회 · 총 ' + c.thr.postsTotal + '회)'));
+      sum.appendChild(el('p', 'pfa-sub', '기간 ' + (c.blog.start || '-') + ' ~ ' + (c.end || '-')));
+    }
+    [plan, per, start, vat].forEach(function (x) { x.addEventListener('change', show); x.addEventListener('input', show); });
+    show();
+    var foot = el('div', 'pfa-save ct-save');
+    var sv = el('button', 'btn btn-ink', '패키지 계약서 2장 만들고 링크 받기'); sv.type = 'submit';
+    var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (!start.value) { st.textContent = '시작일을 골라주세요.'; return; }
+      var c = calc(); sv.disabled = true; st.textContent = '만드는 중…';
+      api('POST', '/api/admin/contracts', c.blog).then(function (jb) {
+        return api('POST', '/api/admin/contracts', c.thr).then(function (jt) {
+          ctPkgDone = { label: c.label, total: c.total, start: c.blog.start, end: c.end, blogUrl: jb.url, thUrl: jt.url };
+          ctList((c.blog.client || '고객') + ' ' + c.label + ' 계약서 2장을 만들었어요.');
+        });
+      }).catch(function (err) {
+        sv.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '만들지 못했어요. 목록에서 만들어진 계약서가 있는지 확인해 주세요.';
+      });
+    });
+    ctBox.appendChild(f);
+    window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
+  var ctPkgDone = null;
+  function ctPkgMsg(d) {
+    var o = ctData.our || {};
+    var acc = o.account ? '\n\n입금 계좌\n' + (o.bank ? o.bank + ' ' : '') + o.account + (o.holder ? ' (예금주 ' + o.holder + ')' : '') + '\n입금 금액 ' + Number(d.total).toLocaleString('ko-KR') + '원 (블로그 + 스레드 합계)' : '';
+    return '블로그 + 스레드 ' + d.label + ' 계약서 보내드립니다!\n\n기간 ' + d.start + ' ~ ' + d.end + '\n\n계약서가 블로그, 스레드 두 개라 각각 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 되세요 :)\n\n블로그 운영 대행 계약서\n' + d.blogUrl + '\n\n스레드 운영 대행 계약서\n' + d.thUrl + '\n\n서명하시면 계약서를 PDF로 저장하실 수 있으니 따로 저장 해주세요!' + acc;
+  }
+
   // 블로그 운영 대행 · 제작(홈페이지 / 홈페이지형 블로그) 양식
   function ctNewOther(src, K) {
     var T = (src && src.terms) || null, RN = !!(src && src._renew);
@@ -942,7 +1032,7 @@
         chars.value = String(p[5]); imgs.value = String(p[6]); poTouched = false; auto();
       });
       get = function () {
-        return { kind: 'blog', client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
+        return { kind: 'blog', pkg: (same && T.pkg) || '', client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
           priceTotal: digits(pTot.value), priceList: digits(pList.value), vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value),
           postsBonus: digits(poB.value), charLimit: digits(chars.value), images: digits(imgs.value), payment: pay.value, revisions: digits(rev.value) || 2, portfolioRequired: pfReq.checked };
       };
@@ -970,6 +1060,7 @@
   function ctNew(src, kindArg) {
     var T = (src && src.terms) || null, RN = !!(src && src._renew); // 수정이면 기존 조건, RN = 연장 계약서
     var K = kindArg || (T && T.kind) || 'threads';
+    if (K === 'package') return ctPkg(src);
     if (K !== 'threads') return ctNewOther(src, K);
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
@@ -1076,7 +1167,7 @@
       e.preventDefault();
       var body = { kind: 'threads', client: client.value, account: account.value, start: start.value, end: end.value, months: digits(months.value),
         testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
-        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), portfolioRequired: pfReq.checked, payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
+        vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), portfolioRequired: pfReq.checked, payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2, pkg: (T && (T.kind || 'threads') === 'threads' && T.pkg) || '' };
       sv.disabled = true; st.textContent = '저장하는 중…';
       (T && !RN ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
         if (RN) return ctRenewDone(src, body, j);
