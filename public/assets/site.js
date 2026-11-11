@@ -204,8 +204,10 @@
           var m = PRICE.blog[state.blogPlan];
           list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월' + (state.blogMonths === 3 ? ' · 5만 원 할인' : ''), price: m * state.blogMonths - (state.blogMonths === 3 ? 5 : 0) });
         }
-        if (on('threads')) list.push({ name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
-        if (on('blog') && on('threads') && state.blogMonths === 3 && state.threadsPlan === '3m') list.push({ name: '블로그 + 스레드 패키지 할인', detail: '둘 다 3개월로 함께 신청', price: -10, minus: true });
+        var pkgOn = on('blog') && on('threads') && state.blogMonths === 3 && state.threadsPlan === '3m';
+        // 패키지: 이벤트 기간에는 스레드를 월 10만 원 × 3개월 기준으로 잡고 10만 원 할인
+        if (on('threads')) list.push(pkgOn ? { name: '스레드 운영 대행', detail: '패키지 · 월 10만 원 × 3개월', price: 30 } : { name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
+        if (pkgOn) list.push({ name: '블로그 + 스레드 패키지 할인', detail: '둘 다 3개월로 함께 신청', price: -10, minus: true });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '랜딩페이지형 기준 · 기능 추가 시 별도', price: PRICE.website, from: true });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
