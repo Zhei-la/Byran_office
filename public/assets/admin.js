@@ -548,9 +548,10 @@
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { btn.textContent = '복사했어요'; }, function () { window.prompt('길게 눌러 복사하세요', t); })
       .then(function () { setTimeout(function () { if (btn.isConnected) btn.textContent = label; }, 1800); });
   }
-  function ctMsg(url, total) {
+  function ctMsg(url, total, renew) {
     var o = ctData.our || {};
     var acc = o.account ? '\n\n입금 계좌\n' + (o.bank ? o.bank + ' ' : '') + o.account + (o.holder ? ' (예금주 ' + o.holder + ')' : '') + (total ? '\n입금 금액 ' + Number(total).toLocaleString('ko-KR') + '원' : '') : '';
+    if (renew) return '연장 계약서 보내드립니다!\n\n연장 기간 ' + (renew.start || '') + ' ~ ' + (renew.end || '') + '\n\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 되세요 :)\n\n서명하시면 계약서를 PDF로 저장하실 수 있으니 따로 저장 해주세요!\n\n' + url + acc;
     return '계약서 보내드립니다!\n\n아래 링크 열어서 내용 확인하시고 맨 아래에 업체 정보 적고 서명해 주시면 되세요 :)\n\n서명하시면 계약서를 PDF로 저장하실 수 있으니 따로 저장 해주세요!\n\n' + url + acc;
   }
   function accOnly() { var o = ctData.our || {}; return o.account ? o.account.replace(/[^0-9-]/g, '') : ''; }
@@ -588,7 +589,20 @@
     return L.join('\n');
   }
   // 계약 종료일 = 마지막 연장 종료일 또는 계약서 종료일
-  var ctQuery = '';
+  var ctQuery = '', ctRenewUrls = {};
+  // 연장 계약서: 지난 계약 내용을 그대로 복사하고 기간만 종료일 다음 날부터로 맞춤
+  function ctRenewSrc(c) {
+    var t = c.terms || {}, sg = c.signer || {}, end = ctEnd(c) || kstToday();
+    var m = Math.max(1, parseInt(t.months, 10) || 1);
+    var sd = new Date(Date.parse(end + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10);
+    var ed = new Date(Date.parse(addMonths(sd, m) + 'T00:00:00Z') - 864e5).toISOString().slice(0, 10);
+    var r = new Date(Date.parse(sd + 'T00:00:00Z') + 6 * 864e5); while (r.getUTCDay() !== 2) r = new Date(r.getTime() + 864e5);
+    var nt = {}; Object.keys(t).forEach(function (k) { nt[k] = t[k]; });
+    nt.client = t.client || sg.name || ''; nt.account = t.account || String(sg.account || '').replace(/^@+/, '');
+    nt.start = sd; nt.end = ed; nt.months = m; nt.postsTotal = (t.postsMonthly || 0) * m; nt.postsBonus = 0;
+    nt.testStart = ''; nt.testEnd = ''; nt.firstReport = t.kind === 'threads' ? r.toISOString().slice(0, 10) : '';
+    return { _renew: true, id: c.id, terms: nt };
+  }
   function ctEnd(c) { var e = c.ext || []; return e.length ? e[e.length - 1].to : ((c.terms || {}).end || ''); }
   function kstToday() { return new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10); }
   function dayDiff(a, b) { return Math.round((Date.parse(a) - Date.parse(b)) / 864e5); }
@@ -645,9 +659,11 @@
       box.appendChild(el('h3', null, '서명 링크가 만들어졌어요'));
       box.appendChild(el('p', 'pfa-hint', '아래 문구를 복사해서 고객 카톡으로 보내주세요. 고객이 서명하면 이 목록에 "서명 완료"로 바뀌어요.'));
       var ci = (ctData.items || []).filter(function (x) { return x.url === created; })[0], ctot = ci && ci.terms ? ci.terms.priceTotal : 0;
-      var pre = el('pre', 'ct-pre', ctMsg(created, ctot)); box.appendChild(pre);
+      var rn = ctRenewUrls[created] && ci ? ci.terms : null;
+      if (rn) box.querySelector('h3').textContent = '연장 계약서 서명 링크가 만들어졌어요';
+      var pre = el('pre', 'ct-pre', ctMsg(created, ctot, rn)); box.appendChild(pre);
       var acts = el('div', 'pfa-adds');
-      var cm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); cm.addEventListener('click', function () { copyText(ctMsg(created, ctot), cm, '카톡 문구 복사'); });
+      var cm = button('카톡 문구 복사', 'btn btn-ink btn-sm'); cm.addEventListener('click', function () { copyText(ctMsg(created, ctot, rn), cm, '카톡 문구 복사'); });
       var cl = button('링크만 복사'); cl.addEventListener('click', function () { copyText(created, cl, '링크만 복사'); });
       var op = el('a', 'btn btn-outline btn-sm', '계약서 열어보기'); op.href = created; op.target = '_blank'; op.rel = 'noopener';
       acts.appendChild(cm); acts.appendChild(cl);
@@ -702,15 +718,16 @@
       if (signed) { var ns = button('노션 정리용 복사'); ns.addEventListener('click', function () { copyText(ctSummary(c), ns, '노션 정리용 복사'); }); act.appendChild(ns); }
       if (!signed) { var edb = button('수정'); edb.addEventListener('click', function () { ctNew(c); }); act.appendChild(edb); }
       if (!signed) {
-        var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url, t.priceTotal), cm, '카톡 문구 복사'); });
+        var isRenew = !!t.client && items.some(function (o) { return o !== c && o.status === 'signed' && (o.terms || {}).client === t.client && (o.terms || {}).kind === t.kind && o.createdAt < c.createdAt; });
+        var cm = button('카톡 문구 복사'); cm.addEventListener('click', function () { copyText(ctMsg(c.url, t.priceTotal, isRenew ? t : null), cm, '카톡 문구 복사'); });
         act.appendChild(cm);
       }
       var cl = button('링크 복사'); cl.addEventListener('click', function () { copyText(c.url, cl, '링크 복사'); });
       act.appendChild(cl);
       if (accOnly()) { var cac = button('계좌번호 복사'); cac.addEventListener('click', function () { copyText(accOnly(), cac, '계좌번호 복사'); }); act.appendChild(cac); }
       if (signed && t.kind !== 'web') {
-        var exb = button(st && st.kind === 'ended' ? '계약 연장' : '연장하기', st && st.kind === 'ended' ? 'btn btn-ink btn-sm' : 'btn btn-outline btn-sm');
-        exb.addEventListener('click', function () { ctExtendForm(c, row); });
+        var exb = button(st && st.kind === 'ended' ? '계약 연장 (새 계약서)' : '연장 계약서 만들기', st && st.kind === 'ended' ? 'btn btn-ink btn-sm' : 'btn btn-outline btn-sm');
+        exb.addEventListener('click', function () { ctNew(ctRenewSrc(c)); });
         act.appendChild(exb);
         if ((c.ext || []).length) {
           var un = button('연장 취소');
@@ -740,6 +757,13 @@
     }
   }
 
+  // 연장 계약서를 만든 뒤: 지난 계약에 연장 기록을 남기고 새 서명 링크 + 카톡 문구 보여주기
+  function ctRenewDone(src, body, j) {
+    ctRenewUrls[j.url] = true;
+    var flash = (body.client || '고객') + ' 연장 계약서를 만들었어요. 아래 문구를 보내서 다시 서명을 받아주세요.';
+    return api('POST', '/api/admin/contracts/' + src.id + '/extend', { end: body.end, note: '연장 계약서 ' + body.start + ' ~ ' + body.end + ' (총 ' + won(body.priceTotal) + ')' })
+      .then(function () { ctList(flash, j.url); }, function () { ctList(flash, j.url); });
+  }
   // 계약 연장 입력 (새 종료일 + 메모)
   function ctExtendForm(c, row) {
     var old = row.querySelector('.ct-extform'); if (old) { old.remove(); return; }
@@ -801,11 +825,12 @@
   }
   // 블로그 운영 대행 · 제작(홈페이지 / 홈페이지형 블로그) 양식
   function ctNewOther(src, K) {
-    var T = (src && src.terms) || null;
+    var T = (src && src.terms) || null, RN = !!(src && src._renew);
     var same = T && (T.kind || 'threads') === K; // 같은 종류를 고치는 중이면 기존 값 채우기
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
-    f.appendChild(ctHead(T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(ctHead(RN ? '연장 계약서 만들기' : T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    if (RN) f.appendChild(el('p', 'pfa-flash', '지난 계약서 내용을 그대로 가져왔어요. 시작일은 지난 계약이 끝나는 다음 날(' + T.start + ')로 맞췄어요. 기간과 금액만 확인하고 만들면 고객이 다시 서명할 링크가 생겨요.'));
     f.appendChild(ctKindPicker(src, K));
     var web = K === 'web';
     f.appendChild(el('p', 'pfa-hint', web
@@ -825,7 +850,7 @@
       'std-2': ['STANDARD · 월 20회 · 2개월 · 60만 원', 20, 2, 800000, 600000, 2000, 10],
       'std-3': ['STANDARD · 월 20회 · 3개월 · 90만 원', 20, 3, 1200000, 900000, 2000, 10]
     };
-    var planSel = el('select'); var o0 = el('option', null, T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
+    var planSel = el('select'); var o0 = el('option', null, RN ? '지난 계약과 같게 (바꿀 때만 고르기)' : T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
     Object.keys(PLAN).forEach(function (k) { var x = el('option', null, PLAN[k][0]); x.value = k; planSel.appendChild(x); });
     var pg = el('div', 'pfa-grid'); pg.appendChild(ctField(web ? '제작 상품' : '요금제', planSel, '고르면 금액' + (web ? '' : '·기간·횟수') + '이 자동으로 채워져요. 이벤트가처럼 다르게 받을 땐 총 계약금액만 고치면 돼요.', true)); f.appendChild(pg);
     var g = el('div', 'pfa-grid');
@@ -926,14 +951,15 @@
     }
     var pfBoxW = el('div', 'pfa-field wide'); pfBoxW.appendChild(pfW); pfBoxW.appendChild(el('p', 'pfa-hint', '체크하면 고객이 포트폴리오 동의를 꼭 해야 서명할 수 있어요(할인 조건). 체크 안 하면 고객이 동의/미동의를 골라요.')); f.appendChild(pfBoxW);
     var foot = el('div', 'pfa-save ct-save');
-    var sv = el('button', 'btn btn-ink', T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var sv = el('button', 'btn btn-ink', RN ? '연장 계약서 만들고 링크 받기' : T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
     var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
     f.addEventListener('submit', function (e) {
       e.preventDefault();
       var body = get();
       if (!body.priceTotal) { st.textContent = '총 계약금액을 적어주세요.'; return; }
       sv.disabled = true; st.textContent = '저장하는 중…';
-      (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+      (T && !RN ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+        if (RN) return ctRenewDone(src, body, j);
         if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
       }, function (err) {
         sv.disabled = false; if (err && err.message === 'auth') return;
@@ -944,14 +970,15 @@
     window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
   }
   function ctNew(src, kindArg) {
-    var T = (src && src.terms) || null; // 수정이면 기존 조건
+    var T = (src && src.terms) || null, RN = !!(src && src._renew); // 수정이면 기존 조건, RN = 연장 계약서
     var K = kindArg || (T && T.kind) || 'threads';
     if (K !== 'threads') return ctNewOther(src, K);
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;
-    f.appendChild(ctHead(T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(ctHead(RN ? '연장 계약서 만들기' : T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    if (RN) f.appendChild(el('p', 'pfa-flash', '지난 계약서 내용을 그대로 가져왔어요. 시작일은 지난 계약이 끝나는 다음 날(' + T.start + ')로 맞췄어요. 기간과 금액만 확인하고 만들면 고객이 다시 서명할 링크가 생겨요.'));
     f.appendChild(ctKindPicker(src, K));
-    f.appendChild(el('p', 'pfa-hint', T ? '고객이 서명하기 전이라 고칠 수 있어요. 저장하면 보냈던 링크에도 바로 반영돼요.' : '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
+    f.appendChild(el('p', 'pfa-hint', RN ? '요금제를 고르면 개월 수·금액이 바뀌고 종료일도 자동으로 맞춰져요.' : T ? '고객이 서명하기 전이라 고칠 수 있어요. 저장하면 보냈던 링크에도 바로 반영돼요.' : '기간·금액·시작일만 정하면 돼요. 고객 상호와 스레드 계정은 모르면 비워두세요. 고객이 계약서 링크에서 직접 적어요(필수 입력). 우리(을) 정보와 서명은 자동으로 들어가요.'));
     var askPre = null, askCp = null;
     if (!T) {
       // 기간을 아직 모를 때: 고객에게 먼저 물어보는 문구 (시작일은 아래 시작일 칸 기준)
@@ -974,7 +1001,7 @@
       '35-2': ['월 35회 · 2개월 · 52만 원', 35, 2, 560000, 520000, 0],
       '35-3': ['월 35회 · 3개월 · 77만 원', 35, 3, 840000, 770000, 0]
     };
-    var planSel = el('select'); var o0 = el('option', null, T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
+    var planSel = el('select'); var o0 = el('option', null, RN ? '지난 계약과 같게 (바꿀 때만 고르기)' : T ? '바꿀 때만 고르기' : '직접 입력'); o0.value = ''; planSel.appendChild(o0);
     Object.keys(PLAN).forEach(function (k) { var x = el('option', null, PLAN[k][0]); x.value = k; planSel.appendChild(x); });
     var pg = el('div', 'pfa-grid'); pg.appendChild(ctField('요금제', planSel, '고르면 기간·횟수·금액이 자동으로 채워져요. 이벤트가처럼 다르게 받을 땐 총 계약금액만 고치면 돼요.', true)); f.appendChild(pg);
     var g = el('div', 'pfa-grid');
@@ -1015,7 +1042,7 @@
     g.appendChild(ctField('수정 횟수 (글 한 건당)', rev));
     f.appendChild(g);
     var pfBoxW = el('div', 'pfa-field wide'); pfBoxW.appendChild(pfW); pfBoxW.appendChild(el('p', 'pfa-hint', '체크하면 고객이 포트폴리오 동의를 꼭 해야 서명할 수 있어요(할인 조건). 체크 안 하면 고객이 동의/미동의를 골라요. 이벤트 요금제는 자동으로 체크돼요.')); f.appendChild(pfBoxW);
-    var poTouched = !!(T && T.postsTotal);
+    var poTouched = !!(T && T.postsTotal) && !RN;
     poT.addEventListener('input', function () { poTouched = true; });
     function auto() {
       var n = Math.max(1, digits(months.value)), sd = parseD(start.value);
@@ -1045,7 +1072,7 @@
       poTouched = false; auto();
     });
     var foot = el('div', 'pfa-save ct-save');
-    var sv = el('button', 'btn btn-ink', T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var sv = el('button', 'btn btn-ink', RN ? '연장 계약서 만들고 링크 받기' : T ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
     var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
     f.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -1053,7 +1080,8 @@
         testStart: tS.value, testEnd: tE.value, priceList: digits(pList.value), priceTotal: digits(pTot.value),
         vat: vat.value, postsMonthly: digits(poM.value), postsTotal: digits(poT.value), postsBonus: digits(poB.value), portfolioRequired: pfReq.checked, payment: pay.value, firstReport: rep.value, revisions: digits(rev.value) || 2 };
       sv.disabled = true; st.textContent = '저장하는 중…';
-      (T ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+      (T && !RN ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+        if (RN) return ctRenewDone(src, body, j);
         if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
       }, function (err) {
         sv.disabled = false; if (err && err.message === 'auth') return;
