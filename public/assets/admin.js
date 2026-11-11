@@ -748,7 +748,7 @@
     f.appendChild(el('p', 'pfa-hint', '지금 종료일 ' + (end || '-') + ' · 새 종료일을 고르면 이 목록에 "연장"으로 기록돼요. 서명된 계약서 내용은 바뀌지 않아요.'));
     var quick = el('div', 'pfa-adds');
     var d = el('input'); d.type = 'date'; d.required = true; d.min = end || ''; d.value = addMonths(end || kstToday(), months);
-    [1, 3].forEach(function (n) { var q = button('+' + n + '개월'); q.addEventListener('click', function () { d.value = addMonths(end || kstToday(), n); }); quick.appendChild(q); });
+    [1, 2, 3].forEach(function (n) { var q = button('+' + n + '개월'); q.addEventListener('click', function () { d.value = addMonths(end || kstToday(), n); }); quick.appendChild(q); });
     f.appendChild(quick);
     var n = el('input'); n.type = 'text'; n.maxLength = 100; n.placeholder = '메모 (예: 1개월 재계약 10만 원 입금 확인)';
     var lw = el('label', 'ct-extrow'); lw.appendChild(el('span', null, '새 종료일')); lw.appendChild(d); f.appendChild(lw);
