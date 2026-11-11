@@ -205,6 +205,7 @@
           list.push({ name: '블로그 운영 대행', detail: (state.blogPlan === 'basic' ? '월 12회' : '월 20회') + ' · ' + state.blogMonths + '개월' + (state.blogMonths === 3 ? ' · 5만 원 할인' : ''), price: m * state.blogMonths - (state.blogMonths === 3 ? 5 : 0) });
         }
         if (on('threads')) list.push({ name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
+        if (on('blog') && on('threads') && state.blogMonths === 3 && state.threadsPlan === '3m') list.push({ name: '블로그 + 스레드 패키지 할인', detail: '둘 다 3개월로 함께 신청', price: -10, minus: true });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '랜딩페이지형 기준 · 기능 추가 시 별도', price: PRICE.website, from: true });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
@@ -214,7 +215,7 @@
         var e = document.createElement('li');
         var a = document.createElement('span'); a.className = 'q-l-name'; a.textContent = it.name;
         var d = document.createElement('small'); d.textContent = it.detail; a.appendChild(d);
-        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.price ? won(it.price) + (it.from ? '~' : '') : '무료';
+        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.minus ? '−' + won(-it.price) : it.price ? won(it.price) + (it.from ? '~' : '') : '무료';
         e.appendChild(a); e.appendChild(b); return e;
       }
       function render() {
@@ -266,7 +267,13 @@
         render: render,
         text: function () {
           var r = render(); if (!r.list.length) return '';
-          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total) + (r.list.some(function (x) { return x.from; }) ? '~ (기능 추가 시 별도)' : '');
+          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.minus ? '-' + won(-it.price) : it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total) + (r.list.some(function (x) { return x.from; }) ? '~ (기능 추가 시 별도)' : '');
+        },
+        pkg: function () {
+          ['svc-blog', 'svc-threads'].forEach(function (id) { var i = document.getElementById(id); if (i) i.checked = true; });
+          state.blogMonths = 3; state.threadsPlan = '3m';
+          var tb = opts.querySelector('[data-q=threads] [data-plan="3m"]'); if (tb) tb.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === tb ? 'true' : 'false'); });
+          render();
         },
         reset: function () {
           opts.querySelectorAll('input[name="svc"]').forEach(function (i) { i.checked = false; });
@@ -282,9 +289,9 @@
     function applyHash(scroll) {
       var hash = (location.hash || '').replace('#', '');
       var el = map[hash] && document.getElementById(map[hash]);
+      if (hash === 'package' && quote && quote.pkg) { quote.pkg(); el = document.getElementById('svc-blog'); }
+      else { if (!el) return; el.checked = true; if (quote) quote.render(); }
       if (!el) return;
-      el.checked = true;
-      if (quote) quote.render();
       if (scroll && hash !== 'diagnosis') {
         var card = document.getElementById('quote') || form.closest('.form-card') || form;
         var go = function () { card.scrollIntoView({ block: 'start' }); };
