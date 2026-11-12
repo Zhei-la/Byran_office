@@ -618,3 +618,7 @@ body:has(.q-bar:not([hidden])) .kakao-fab{bottom:calc(92px + env(safe-area-inset
 .ct-extform{grid-column:1/-1;margin-top:14px;padding:16px;border:1px dashed var(--line,#d9d5cb);border-radius:6px;display:grid;gap:10px;background:#fbfaf6}
 .ct-extrow{display:grid;grid-template-columns:72px 1fr;align-items:center;gap:10px;font-size:14px}
 .ct-extrow input{height:42px;padding:0 12px;border:1px solid var(--line,#d9d5cb);border-radius:6px;font:inherit;background:#fff;min-width:0}
+/* 컨설팅 4개 카드: PC 2열 */
+.plans.plans-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.plans-2 .plan li b{color:inherit;font-weight:600}
+.q-card[data-q="consult"] .seg{flex-wrap:wrap;border-radius:18px;max-width:100%}

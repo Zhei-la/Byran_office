@@ -189,13 +189,14 @@
     var quote = (function () {
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
-      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0 };
-      var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m20' };
+      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0, consult: { basic: 7.9, standard: 19.9, premium: 49, vip: 119 } };
+      var CS_DETAIL = { basic: '계정 진단 · 1회 30분', standard: '성장 전략 · 1회 60분', premium: '1개월 밀착 · 4주', vip: '3개월 집중 성장 · 12주 · 28만 원 할인' };
+      var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m20', consultPlan: 'basic' };
       var TH_DETAIL = { '1m20': '1개월 · 월 20회', '1m31': '1개월 · 1일 1글 31회', '3m': '3개월 · 총 90회' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
       var totalEl = document.getElementById('qTotal'), barTotal = document.getElementById('qBarTotal');
       var summary = document.getElementById('qSummary');
-      function won(n) { return n > 0 ? n.toLocaleString('ko-KR') + '만 원' : '0원'; }
+      function won(n) { n = Math.round(n * 10) / 10; return n > 0 ? (n % 1 ? (n * 10000).toLocaleString('ko-KR') + '원' : n.toLocaleString('ko-KR') + '만 원') : '0원'; }
       function card(k) { return opts.querySelector('[data-q="' + k + '"]'); }
       function on(k) { var c = card(k); return !!(c && c.querySelector('input').checked); }
       function items() {
@@ -208,6 +209,7 @@
         // 패키지: 이벤트 기간에는 스레드를 월 10만 원 × 3개월 기준으로 잡고 10만 원 할인
         if (on('threads')) list.push(pkgOn ? { name: '스레드 운영 대행', detail: '패키지 · 월 10만 원 × 3개월', price: 30 } : { name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
         if (pkgOn) list.push({ name: '블로그 + 스레드 패키지 할인', detail: '둘 다 3개월로 함께 신청', price: -10, minus: true });
+        if (on('consult')) list.push({ name: '1:1 스레드 계정 컨설팅', detail: CS_DETAIL[state.consultPlan], price: PRICE.consult[state.consultPlan] });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '랜딩페이지형 기준 · 기능 추가 시 별도', price: PRICE.website, from: true });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
@@ -246,7 +248,7 @@
         var c = b.closest('.q-card'), k = c.getAttribute('data-q');
         if (b.hasAttribute('data-plan')) {
           b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
-          if (k === 'blog') state.blogPlan = b.getAttribute('data-plan'); else state.threadsPlan = b.getAttribute('data-plan');
+          if (k === 'blog') state.blogPlan = b.getAttribute('data-plan'); else if (k === 'consult') state.consultPlan = b.getAttribute('data-plan'); else state.threadsPlan = b.getAttribute('data-plan');
         } else if (b.hasAttribute('data-count')) {
           b.parentNode.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
           state.threadsCount = b.getAttribute('data-count');
@@ -279,14 +281,14 @@
         },
         reset: function () {
           opts.querySelectorAll('input[name="svc"]').forEach(function (i) { i.checked = false; });
-          state.blogPlan = 'basic'; state.blogMonths = 1; state.threadsPlan = '1m20';
+          state.blogPlan = 'basic'; state.blogMonths = 1; state.threadsPlan = '1m20'; state.consultPlan = 'basic';
           opts.querySelectorAll('.seg').forEach(function (g) { g.querySelectorAll('button').forEach(function (x, i) { x.setAttribute('aria-pressed', i === 0 ? 'true' : 'false'); }); });
           render();
         }
       };
     })();
 
-    var map = { diagnosis: 'svc-diag', blog: 'svc-blog', threads: 'svc-threads', bloghome: 'svc-bloghome', website: 'svc-website' };
+    var map = { diagnosis: 'svc-diag', blog: 'svc-blog', threads: 'svc-threads', bloghome: 'svc-bloghome', website: 'svc-website', consulting: 'svc-consult' };
     // 주소 끝(#blog 등)에 맞춰 문의 서비스를 미리 선택하고, 서비스 문의면 작성 칸으로 이동
     function applyHash(scroll) {
       var hash = (location.hash || '').replace('#', '');
