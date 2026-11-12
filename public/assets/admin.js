@@ -575,6 +575,17 @@
       L.push('계약서 ' + c.url);
       return L.join('\n');
     }
+    if (t.kind === 'consult') {
+      var cp = CT_CS[t.cPlan] || CT_CS['1h'];
+      L.push('스레드 계정 ' + (t.account ? '@' + t.account : (sg.account ? '@' + String(sg.account).replace(/^@+/, '') : '미입력')));
+      L.push((t.cPlan === '1h' ? '컨설팅 일자 ' + (t.start || '') : '진행 기간 ' + (t.start || '') + ' ~ ' + (t.end || '')));
+      L.push('총 계약금액 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '별도') + ')' + (t.priceList && t.priceList > t.priceTotal ? ' · 정상가 ' + won(t.priceList) : ''));
+      L.push('1:1 컨설팅 ' + (t.meetings || cp.meet) + ' · 피드백 ' + (t.feedback || cp.fb));
+      if (t.payment) L.push('결제 ' + t.payment);
+      L.push('포트폴리오 활용 ' + (signed ? (sg.consent === 'yes' ? '동의' : '미동의') : '선택'));
+      L.push('계약서 ' + c.url);
+      return L.join('\n');
+    }
     if (t.kind === 'package') {
       L.push('블로그 ' + (t.blogAccount || '미입력') + ' · 스레드 계정 ' + (t.account ? '@' + t.account : '미입력'));
       L.push('서비스별 금액 블로그 ' + won(t.bPrice) + ' (월 ' + (t.bPostsMonthly || 0) + '회 · 총 ' + (t.bPostsTotal || 0) + '회) + 스레드 ' + won(t.thPrice) + ' (월 ' + (t.postsMonthly || 0) + '회 · 총 ' + (t.postsTotal || 0) + '회)');
@@ -704,7 +715,7 @@
       info.appendChild(el('h3', null, (t.client || '상호 고객 입력') + (accTxt ? ' · ' + accTxt : '')));
       info.appendChild(el('p', 'pfa-sub', t.kind === 'web'
         ? '완성 예정 ' + (t.due || '협의') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · ' + (t.payment || '')
-        : (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · ' + (t.kind === 'package' ? '블로그 월 ' + (t.bPostsMonthly || 0) + '회 + 스레드 월 ' + (t.postsMonthly || 0) + '회' : '월 ' + (t.postsMonthly || 0) + '회')));
+        : (t.start || '') + ' ~ ' + (t.end || '') + ' · 총 ' + won(t.priceTotal) + ' (부가세 ' + (t.vat || '') + ') · ' + (t.kind === 'consult' ? '1:1 컨설팅 ' + (t.meetings || '') : t.kind === 'package' ? '블로그 월 ' + (t.bPostsMonthly || 0) + '회 + 스레드 월 ' + (t.postsMonthly || 0) + '회' : '월 ' + (t.postsMonthly || 0) + '회')));
       (c.ext || []).forEach(function (x, i) {
         info.appendChild(el('p', 'pfa-hl ct-ext', '연장 ' + (i + 1) + ' · ' + (x.from || '') + ' → ' + x.to + (x.note ? ' · ' + x.note : '') + ' (기록 ' + fmtDate(x.at) + ')'));
       });
@@ -812,8 +823,15 @@
   function digits(s) { return parseInt(String(s || '').replace(/[^\d]/g, ''), 10) || 0; }
 
   // 계약서 종류
-  var CT_KINDS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['package', '블로그 + 스레드 패키지'], ['web', '홈페이지 · 홈페이지형 블로그 제작']];
-  function ctKindLabel(t) { t = t || {}; if (t.kind === 'package') return '블로그 + 스레드 · ' + (t.pkg || '패키지'); if (t.pkg) return (t.kind === 'blog' ? '블로그' : '스레드') + ' · ' + t.pkg; if (t.kind === 'blog') return '블로그 운영 대행'; if (t.kind === 'web') return t.product === 'blogHome' ? '홈페이지형 블로그 제작' : '홈페이지 제작'; return '스레드 운영 대행'; }
+  // 스레드 컨설팅 상품: [이름, 정상가, 금액, 진행 일수, 1:1 컨설팅, 피드백]
+  var CT_CS = {
+    '1h': { label: '1회 1시간', name: '1회 컨설팅 · 1시간 · 79,000원', list: 0, price: 79000, days: 1, meet: '1회 · 60분', fb: '컨설팅 당일 질문까지' },
+    '1w': { label: '1주', name: '1주 성장 전략 컨설팅 · 199,000원', list: 0, price: 199000, days: 7, meet: '1회 · 60분', fb: '7일간 질문·피드백' },
+    '1m': { label: '1개월', name: '1개월 밀착 컨설팅 · 49만 원', list: 0, price: 490000, days: 28, meet: '시작할 때 1회 · 60분', fb: '4주간 무제한 피드백' },
+    '3m': { label: '3개월', name: '3개월 집중 성장 컨설팅 · 119만 원 (정상가 147만 원)', list: 1470000, price: 1190000, days: 84, meet: '매달 1회 · 60분 (총 3회)', fb: '12주간 무제한 피드백' }
+  };
+  var CT_KINDS = [['threads', '스레드 운영 대행'], ['blog', '블로그 운영 대행'], ['package', '블로그 + 스레드 패키지'], ['web', '홈페이지 · 홈페이지형 블로그 제작'], ['consult', '스레드 컨설팅']];
+  function ctKindLabel(t) { t = t || {}; if (t.kind === 'consult') return '스레드 컨설팅 · ' + ((CT_CS[t.cPlan] || CT_CS['1h']).label); if (t.kind === 'package') return '블로그 + 스레드 · ' + (t.pkg || '패키지'); if (t.pkg) return (t.kind === 'blog' ? '블로그' : '스레드') + ' · ' + t.pkg; if (t.kind === 'blog') return '블로그 운영 대행'; if (t.kind === 'web') return t.product === 'blogHome' ? '홈페이지형 블로그 제작' : '홈페이지 제작'; return '스레드 운영 대행'; }
   function ctKindPicker(src, K) {
     var w = el('div', 'pfa-field wide'); w.appendChild(el('label', null, '계약서 종류'));
     var row = el('div', 'ct-kinds');
@@ -1044,10 +1062,83 @@
     ctBox.appendChild(f);
     window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
   }
+  // 1:1 스레드 계정 컨설팅 양식
+  function ctConsult(src) {
+    var T = (src && src.terms) || null, RN = !!(src && src._renew);
+    var same = T && T.kind === 'consult';
+    ctBox.textContent = '';
+    var f = el('form', 'pfa-form'); f.noValidate = true;
+    f.appendChild(ctHead(RN ? '연장 계약서 만들기' : T ? '계약서 수정 (서명 전)' : '새 계약서'));
+    f.appendChild(ctKindPicker(src, 'consult'));
+    f.appendChild(el('p', 'pfa-hint', '상품을 고르면 금액·기간·컨설팅 횟수·피드백이 자동으로 채워져요. 고객 상호와 스레드 계정은 모르면 비워두세요(고객이 링크에서 직접 적어요).'));
+    var v = function (k, d) { return same && T[k] != null && T[k] !== 0 && T[k] !== '' ? String(T[k]) : (T && !same && k === 'client' && T[k] ? String(T[k]) : (d == null ? '' : String(d))); };
+    var plan = el('select'); Object.keys(CT_CS).forEach(function (k) { var x = el('option', null, CT_CS[k].name); x.value = k; if ((same ? T.cPlan : '1h') === k) x.selected = true; plan.appendChild(x); });
+    var g = el('div', 'pfa-grid');
+    var client = ctInput('text', v('client'), '예: 행컵 안산한양대점'); client.maxLength = 100;
+    var account = ctInput('text', v('account'), '예: byran_shop'); account.maxLength = 60;
+    var start = ctInput('date', v('start', iso(new Date())));
+    var end = ctInput('date', v('end'));
+    var pTot = ctInput('text', v('priceTotal', CT_CS['1h'].price)); pTot.inputMode = 'numeric';
+    var pList = ctInput('text', v('priceList')); pList.inputMode = 'numeric';
+    var vat = ctSelect(['별도', '포함'], (same && T.vat) || '별도');
+    var pay = ctSelect(['일시불 선결제'], '일시불 선결제');
+    var meet = ctInput('text', v('meetings', CT_CS['1h'].meet)); meet.maxLength = 80;
+    var fb = ctInput('text', v('feedback', CT_CS['1h'].fb)); fb.maxLength = 80;
+    var startF = ctField('컨설팅 일자 *', start, '1:1 컨설팅 하는 날');
+    var endF = ctField('종료일', end, '시작일과 상품에 맞춰 자동으로 채워져요.');
+    g.appendChild(ctField('컨설팅 상품 *', plan, null, true));
+    g.appendChild(ctField('고객 상호', client, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(ctField('스레드 계정', account, '모르면 비워두기 → 고객이 직접 입력'));
+    g.appendChild(startF); g.appendChild(endF);
+    g.appendChild(ctField('총 계약금액 * (실제로 받는 금액)', pTot));
+    g.appendChild(ctField('정상가 (원래 금액)', pList, '총 계약금액보다 크면 "정상가 → 할인 금액"이 같이 나와요.'));
+    g.appendChild(ctField('부가세', vat));
+    g.appendChild(ctField('1:1 컨설팅 (횟수·시간)', meet));
+    g.appendChild(ctField('피드백 범위', fb));
+    g.appendChild(ctField('결제 방식', pay));
+    f.appendChild(g);
+    var sync = function () {
+      var p = CT_CS[plan.value], once = plan.value === '1h';
+      startF.querySelector('label').textContent = once ? '컨설팅 일자 *' : '시작일 *';
+      startF.querySelector('.pfa-hint').textContent = once ? '1:1 컨설팅 하는 날' : '컨설팅을 시작하는 날 (첫 1:1 컨설팅 날)';
+      endF.hidden = once;
+      var sd = parseD(start.value);
+      if (sd) end.value = iso(new Date(sd.getFullYear(), sd.getMonth(), sd.getDate() + p.days - 1));
+    };
+    plan.addEventListener('change', function () {
+      var p = CT_CS[plan.value];
+      pTot.value = String(p.price); pList.value = p.list ? String(p.list) : ''; meet.value = p.meet; fb.value = p.fb; sync();
+    });
+    [start].forEach(function (x) { x.addEventListener('input', sync); x.addEventListener('change', sync); });
+    sync();
+    var foot = el('div', 'pfa-save ct-save');
+    var sv = el('button', 'btn btn-ink', T && !RN ? '수정 저장' : '계약서 만들고 링크 받기'); sv.type = 'submit';
+    var st = el('p', 'adm-msg'); foot.appendChild(sv); foot.appendChild(st); f.appendChild(foot);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var p = CT_CS[plan.value];
+      var body = { kind: 'consult', cPlan: plan.value, client: client.value, account: account.value, start: start.value, end: plan.value === '1h' ? start.value : end.value,
+        months: plan.value === '3m' ? 3 : plan.value === '1m' ? 1 : 0, priceTotal: digits(pTot.value), priceList: digits(pList.value), vat: vat.value, payment: pay.value,
+        meetings: meet.value || p.meet, feedback: fb.value || p.fb };
+      if (!body.priceTotal) { st.textContent = '총 계약금액을 적어주세요.'; return; }
+      if (!body.start) { st.textContent = '컨설팅 일자를 적어주세요.'; return; }
+      sv.disabled = true; st.textContent = '저장하는 중…';
+      (T && !RN ? api('PUT', '/api/admin/contracts/' + src.id, body) : api('POST', '/api/admin/contracts', body)).then(function (j) {
+        if (RN) return ctRenewDone(src, body, j);
+        if (T) ctList('계약서를 수정했어요. 보냈던 링크에도 바로 반영돼요.'); else ctList(null, j.url);
+      }, function (err) {
+        sv.disabled = false; if (err && err.message === 'auth') return;
+        st.textContent = (err && err.message && err.message !== 'error') ? err.message : '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
+      });
+    });
+    ctBox.appendChild(f);
+    window.scrollTo(0, ctBox.getBoundingClientRect().top + window.pageYOffset - 90);
+  }
   function ctNew(src, kindArg) {
     var T = (src && src.terms) || null, RN = !!(src && src._renew); // 수정이면 기존 조건, RN = 연장 계약서
     var K = kindArg || (T && T.kind) || 'threads';
     if (K === 'package') return ctPkg(src);
+    if (K === 'consult') return ctConsult(src);
     if (K !== 'threads') return ctNewOther(src, K);
     ctBox.textContent = '';
     var f = el('form', 'pfa-form'); f.noValidate = true;

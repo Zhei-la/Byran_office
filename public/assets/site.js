@@ -190,7 +190,7 @@
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
       var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0 };
-      var CS_DETAIL = { basic: '계정 진단 · 1회 30분', standard: '성장 전략 · 1회 60분', premium: '1개월 밀착 · 4주', vip: '3개월 집중 성장 · 12주' };
+      var CS_DETAIL = { basic: '1회 · 1시간', standard: '1주 성장 전략', premium: '1개월 밀착', vip: '3개월 집중 성장' };
       var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m20', consultPlan: 'basic' };
       var TH_DETAIL = { '1m20': '1개월 · 월 20회', '1m31': '1개월 · 1일 1글 31회', '3m': '3개월 · 총 90회' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
