@@ -189,8 +189,8 @@
     var quote = (function () {
       var opts = document.getElementById('qOpts');
       if (!opts) return null;
-      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0, consult: { basic: 7.9, standard: 19.9, premium: 49, vip: 119 } };
-      var CS_DETAIL = { basic: '계정 진단 · 1회 30분', standard: '성장 전략 · 1회 60분', premium: '1개월 밀착 · 4주', vip: '3개월 집중 성장 · 12주 · 28만 원 할인' };
+      var PRICE = { blog: { basic: 20, standard: 30 }, threads: { '1m20': 10, '1m31': 26, '3m': 25 }, bloghome: 15, bloghomeWithBlog: 10, website: 30, diag: 0 };
+      var CS_DETAIL = { basic: '계정 진단 · 1회 30분', standard: '성장 전략 · 1회 60분', premium: '1개월 밀착 · 4주', vip: '3개월 집중 성장 · 12주' };
       var state = { blogPlan: 'basic', blogMonths: 1, threadsPlan: '1m20', consultPlan: 'basic' };
       var TH_DETAIL = { '1m20': '1개월 · 월 20회', '1m31': '1개월 · 1일 1글 31회', '3m': '3개월 · 총 90회' };
       var linesEl = document.getElementById('qLines'), emptyEl = document.getElementById('qEmpty');
@@ -209,7 +209,7 @@
         // 패키지: 이벤트 기간에는 스레드를 월 10만 원 × 3개월 기준으로 잡고 10만 원 할인
         if (on('threads')) list.push(pkgOn ? { name: '스레드 운영 대행', detail: '패키지 · 월 10만 원 × 3개월', price: 30 } : { name: '스레드 운영 대행', detail: TH_DETAIL[state.threadsPlan], price: PRICE.threads[state.threadsPlan] });
         if (pkgOn) list.push({ name: '블로그 + 스레드 패키지 할인', detail: '둘 다 3개월로 함께 신청', price: -10, minus: true });
-        if (on('consult')) list.push({ name: '1:1 스레드 계정 컨설팅', detail: CS_DETAIL[state.consultPlan], price: PRICE.consult[state.consultPlan] });
+        if (on('consult')) list.push({ name: '1:1 스레드 계정 컨설팅', detail: CS_DETAIL[state.consultPlan], price: 0, ask: true });
         if (on('bloghome')) list.push({ name: '홈페이지형 블로그 제작', detail: on('blog') ? '블로그 운영 대행과 함께 · 5만 원 할인' : '1회 제작 · 완성 후 수정 3회', price: on('blog') ? PRICE.bloghomeWithBlog : PRICE.bloghome });
         if (on('website')) list.push({ name: '홈페이지 제작', detail: '랜딩페이지형 기준 · 기능 추가 시 별도', price: PRICE.website, from: true });
         if (on('diag')) list.push({ name: '무료 채널 진단', detail: '블로그·스레드·홈페이지 점검', price: 0 });
@@ -219,12 +219,13 @@
         var e = document.createElement('li');
         var a = document.createElement('span'); a.className = 'q-l-name'; a.textContent = it.name;
         var d = document.createElement('small'); d.textContent = it.detail; a.appendChild(d);
-        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.minus ? '−' + won(-it.price) : it.price ? won(it.price) + (it.from ? '~' : '') : '무료';
+        var b = document.createElement('span'); b.className = 'q-l-price'; b.textContent = it.ask ? '금액 문의' : it.minus ? '−' + won(-it.price) : it.price ? won(it.price) + (it.from ? '~' : '') : '무료';
         e.appendChild(a); e.appendChild(b); return e;
       }
       function render() {
         var list = items(), total = list.reduce(function (t, x) { return t + x.price; }, 0);
-        var tw = won(total) + (list.some(function (x) { return x.from; }) ? '~' : '');
+        var ask = list.some(function (x) { return x.ask; });
+        var tw = total > 0 ? won(total) + (list.some(function (x) { return x.from; }) ? '~' : '') + (ask ? ' + 컨설팅 문의' : '') : (ask ? '금액 문의' : '0원');
         opts.querySelectorAll('.q-card').forEach(function (c) { c.classList.toggle('on', c.querySelector('input').checked); });
         linesEl.textContent = ''; list.forEach(function (it) { linesEl.appendChild(li(it)); });
         emptyEl.hidden = list.length > 0;
@@ -271,7 +272,7 @@
         render: render,
         text: function () {
           var r = render(); if (!r.list.length) return '';
-          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.minus ? '-' + won(-it.price) : it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + won(r.total) + (r.list.some(function (x) { return x.from; }) ? '~ (기능 추가 시 별도)' : '');
+          return r.list.map(function (it) { return it.name + ' (' + it.detail + ') ' + (it.ask ? '금액 문의' : it.minus ? '-' + won(-it.price) : it.price ? won(it.price) : '무료'); }).join('\n') + '\n예상 비용 합계: ' + (r.total > 0 ? won(r.total) + (r.list.some(function (x) { return x.from; }) ? '~ (기능 추가 시 별도)' : '') + (r.list.some(function (x) { return x.ask; }) ? ' + 컨설팅 금액 문의' : '') : (r.list.some(function (x) { return x.ask; }) ? '금액 문의' : '0원'));
         },
         pkg: function () {
           ['svc-blog', 'svc-threads'].forEach(function (id) { var i = document.getElementById(id); if (i) i.checked = true; });
